@@ -1,0 +1,1639 @@
+<title>Okey 101 Yaz Boz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400..700&display=swap">
+
+<style>
+/* ---------- tokens ---------- */
+:root{
+  --bg:#EFF1EC; --surface:#F9FAF7; --surface-2:#E4E8E0; --sunken:#DCE1D7;
+  --line:#CFD6CA; --line-soft:#DEE3D9;
+  --text:#161C18; --muted:#5C6A62; --faint:#8A968E;
+  --tile-bg:#1C221E; --tile-hi:#333C36; --tile-edge:#0B0F0C; --tile-text:#F2EFE6;
+  --suit-0:#B8342B; --suit-1:#1B5798; --suit-2:#8F6200; --suit-3:#20261F;
+  --good:#2C7A4B; --bad:#B8342B;
+  --focus:#1B5798;
+  --shadow:0 1px 2px rgba(20,30,24,.06), 0 8px 24px rgba(20,30,24,.07);
+  --sheet-shadow:0 -8px 40px rgba(20,30,24,.22);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#131A17; --surface:#1B2320; --surface-2:#232C28; --sunken:#151C19;
+    --line:#2E3A35; --line-soft:#252E2A;
+    --text:#E9EDE9; --muted:#8E9C95; --faint:#6C7A73;
+    --tile-bg:#E7E1D3; --tile-hi:#FBF7EC; --tile-edge:#B4AE9E; --tile-text:#141A16;
+    --suit-0:#F2685C; --suit-1:#62A8F0; --suit-2:#E7B93F; --suit-3:#D6DED8;
+    --good:#5BC38A; --bad:#F2685C;
+    --focus:#62A8F0;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.34);
+    --sheet-shadow:0 -8px 44px rgba(0,0,0,.55);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#131A17; --surface:#1B2320; --surface-2:#232C28; --sunken:#151C19;
+  --line:#2E3A35; --line-soft:#252E2A;
+  --text:#E9EDE9; --muted:#8E9C95; --faint:#6C7A73;
+  --tile-bg:#E7E1D3; --tile-hi:#FBF7EC; --tile-edge:#B4AE9E; --tile-text:#141A16;
+  --suit-0:#F2685C; --suit-1:#62A8F0; --suit-2:#E7B93F; --suit-3:#D6DED8;
+  --good:#5BC38A; --bad:#F2685C;
+  --focus:#62A8F0;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.34);
+  --sheet-shadow:0 -8px 44px rgba(0,0,0,.55);
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:"Instrument Sans","Segoe UI",system-ui,sans-serif;
+  font-size:16px; line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent;
+  overscroll-behavior-y:none;
+  display:flex; flex-direction:column; min-height:100dvh;
+}
+button,input,textarea{font:inherit; color:inherit}
+button{cursor:pointer; touch-action:manipulation}
+:focus-visible{outline:2px solid var(--focus); outline-offset:2px; border-radius:6px}
+h1,h2,h3{margin:0; font-family:"Bricolage Grotesque","Instrument Sans",sans-serif; font-weight:700; text-wrap:balance}
+
+/* ---------- tile motif ---------- */
+.tile{
+  background:linear-gradient(180deg,var(--tile-hi),var(--tile-bg) 46%);
+  color:var(--tile-text);
+  border-radius:12px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35), 0 2px 0 var(--tile-edge), 0 6px 16px rgba(0,0,0,.25);
+  border:none;
+}
+.tile:active{transform:translateY(2px); box-shadow:inset 0 1px 0 rgba(255,255,255,.3), 0 0 0 var(--tile-edge), 0 3px 8px rgba(0,0,0,.25)}
+
+/* ---------- chrome ---------- */
+.topbar{
+  position:sticky; top:0; z-index:20;
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
+  background:var(--bg);
+  border-bottom:1px solid var(--line-soft);
+}
+.brand{display:flex; align-items:center; gap:9px; min-width:0}
+.brand-mark{
+  display:grid; place-items:center; width:34px; height:34px; flex:none;
+  font-family:"Bricolage Grotesque",sans-serif; font-weight:800; font-size:14px; letter-spacing:-.02em;
+}
+.brand-text{font-family:"Bricolage Grotesque",sans-serif; font-weight:700; font-size:17px; letter-spacing:-.01em; white-space:nowrap}
+.brand-sub{font-size:12px; color:var(--faint); white-space:nowrap}
+.icon-btn{
+  width:38px; height:38px; flex:none; display:grid; place-items:center;
+  background:var(--surface); border:1px solid var(--line); border-radius:10px; color:var(--muted);
+}
+.icon-btn:active{background:var(--surface-2)}
+
+main{flex:1; padding:14px 16px 8px; display:flex; flex-direction:column; gap:14px; width:100%; max-width:640px; margin:0 auto}
+
+.actionbar{
+  position:sticky; bottom:0; z-index:20;
+  padding:8px 16px calc(12px + env(safe-area-inset-bottom));
+  background:linear-gradient(to top, var(--bg) 68%, transparent);
+  width:100%; max-width:640px; margin:0 auto;
+  display:flex; flex-direction:column; gap:7px;
+}
+.next-dealer{
+  text-align:center; font-size:12px; color:var(--faint); letter-spacing:.01em;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.next-dealer b{color:var(--muted); font-weight:600}
+.btn-primary{
+  width:100%; padding:16px; font-family:"Bricolage Grotesque",sans-serif;
+  font-weight:700; font-size:17px; letter-spacing:-.01em;
+}
+
+/* ---------- standings ---------- */
+.standings-wrap{display:flex; flex-direction:column; gap:8px}
+.sec-label{
+  display:flex; align-items:baseline; gap:7px; padding-left:3px;
+  font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--faint);
+}
+.sec-label em{font-style:normal; font-weight:400; font-size:11px; letter-spacing:0; text-transform:none; opacity:.8}
+.standings{display:grid; grid-template-columns:repeat(4,1fr); gap:8px}
+.standings.two{grid-template-columns:repeat(2,1fr)}
+.ptile{
+  position:relative; padding:11px 6px 9px; border-radius:12px; text-align:center;
+  display:flex; flex-direction:column; justify-content:center;
+  background:var(--surface); border:1px solid var(--line);
+  box-shadow:var(--shadow); overflow:hidden;
+}
+.ptile::before{content:""; position:absolute; inset:0 0 auto; height:3px; background:var(--suit)}
+.ptile.lead{border-color:var(--suit)}
+.ptile-name{
+  font-size:11.5px; font-weight:600; color:var(--suit);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px;
+}
+.ptile-total{
+  font-family:"Bricolage Grotesque",sans-serif; font-weight:800;
+  font-size:clamp(20px,6.4vw,27px); letter-spacing:-.03em; line-height:1.15;
+  font-variant-numeric:tabular-nums; margin-top:1px;
+}
+.ptile-sub{font-size:9.5px; color:var(--faint); font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.ptile-sub i{font-style:normal; opacity:.6; padding:0 1px}
+.two .ptile{padding:13px 10px 11px}
+.two .ptile-name{font-size:13.5px}
+.two .ptile-total{font-size:clamp(28px,9vw,38px)}
+.two .ptile-sub{font-size:11px}
+.lead-flag{
+  display:block; margin-top:3px; font-size:8.5px; font-weight:700;
+  letter-spacing:.09em; text-transform:uppercase; color:var(--suit);
+}
+.two .lead-flag{font-size:9.5px}
+
+/* ---------- cards ---------- */
+.card{background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); overflow:hidden}
+.card-head{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px 10px}
+.card-head h2{font-size:14px; letter-spacing:-.01em}
+.card-head .hint{font-size:11.5px; color:var(--faint); text-align:right}
+.seg{display:flex; gap:6px; flex:none}
+.seg button{
+  padding:7px 11px; font-size:12.5px; font-weight:600;
+  background:var(--surface-2); border:1px solid var(--line); border-radius:9px; color:var(--text);
+  white-space:nowrap;
+}
+.seg button:active{background:var(--sunken)}
+
+/* ---------- score grid ---------- */
+.gridwrap{overflow-x:auto}
+table{width:100%; border-collapse:collapse; table-layout:fixed}
+thead th{
+  padding:6px 4px 8px; font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+  color:var(--faint); border-bottom:1px solid var(--line); text-align:center;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+thead th.p{color:var(--suit); text-transform:none; font-size:11.5px; letter-spacing:0}
+thead th.el{width:104px; text-align:left; padding-left:12px}
+tbody tr{border-bottom:1px solid var(--line-soft)}
+tbody tr[data-hand]:active{background:var(--surface-2)}
+tbody td{padding:10px 4px; text-align:center; font-size:15px; font-variant-numeric:tabular-nums;
+  font-family:"DM Mono",ui-monospace,monospace}
+tbody td.el{text-align:left; padding-left:12px; font-family:"Instrument Sans",sans-serif; line-height:1.3}
+tbody td.el b{display:block; font-size:12px; font-weight:500; color:var(--muted)}
+tbody td.el .dlr{
+  display:block; font-size:10px; color:var(--faint); font-weight:400;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+tbody td.neg{color:var(--good)}
+tfoot td{
+  padding:8px 4px; text-align:center; font-size:13px; font-weight:400;
+  font-family:"DM Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums;
+  background:var(--surface-2); color:var(--muted);
+}
+tfoot tr:first-child td{border-top:1px solid var(--line); padding-top:11px}
+tfoot tr.grand td{
+  font-size:15.5px; font-weight:500; color:var(--text); padding:9px 4px 12px;
+  border-top:1px solid var(--line-soft);
+}
+tfoot td.el{text-align:left; padding-left:12px; font-size:10.5px; font-weight:600; letter-spacing:.01em;
+  text-transform:none; white-space:nowrap; color:var(--faint); font-family:"Instrument Sans",sans-serif}
+tfoot tr.grand td.el{color:var(--muted); font-weight:700; font-size:11px}
+.empty{padding:22px 16px 26px; text-align:center; color:var(--faint); font-size:13.5px; line-height:1.6}
+
+/* ---------- ledger ---------- */
+.ledger{list-style:none; margin:0; padding:0}
+.ledger li{
+  display:flex; align-items:center; gap:9px; padding:11px 12px 11px 14px;
+  border-top:1px solid var(--line-soft);
+}
+.dot{width:9px; height:9px; border-radius:50%; background:var(--suit); flex:none}
+.led-name{flex:1; min-width:0; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.badge{
+  font-size:9.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase;
+  padding:3px 7px; border-radius:5px; flex:none;
+}
+.badge.rekor{color:var(--good); background:color-mix(in srgb, var(--good) 15%, transparent)}
+.badge.ceza{color:var(--bad); background:color-mix(in srgb, var(--bad) 15%, transparent)}
+.led-val{font-family:"DM Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums; font-size:14.5px; min-width:50px; text-align:right; flex:none}
+.led-del{background:none; border:none; color:var(--faint); font-size:21px; line-height:1; padding:2px 5px; flex:none}
+
+/* ---------- setup ---------- */
+.setup{max-width:460px; margin:0 auto; width:100%; display:flex; flex-direction:column; gap:18px; padding-top:2vh}
+.setup-hero{text-align:center; display:flex; flex-direction:column; align-items:center; gap:10px}
+.hero-mark{width:56px; height:56px; display:grid; place-items:center;
+  font-family:"Bricolage Grotesque",sans-serif; font-weight:800; font-size:21px; letter-spacing:-.03em}
+.setup-hero h1{font-size:clamp(26px,7.2vw,32px); letter-spacing:-.035em; line-height:1.05}
+.setup-hero p{margin:0; color:var(--muted); font-size:13.5px; max-width:32ch}
+
+.modes{display:grid; grid-template-columns:repeat(2,1fr); gap:8px}
+.mode-btn{
+  display:flex; flex-direction:column; align-items:flex-start; gap:2px;
+  padding:12px 14px; border-radius:12px; text-align:left;
+  background:var(--surface); border:1px solid var(--line); color:var(--text);
+  font-family:"Bricolage Grotesque",sans-serif; font-weight:700; font-size:16px; letter-spacing:-.01em;
+}
+.mode-btn em{font-family:"Instrument Sans",sans-serif; font-style:normal; font-weight:400; font-size:11.5px; color:var(--faint); letter-spacing:0}
+.mode-btn.on{border-color:var(--focus); box-shadow:0 0 0 2px color-mix(in srgb, var(--focus) 26%, transparent)}
+.mode-btn.on em{color:var(--muted)}
+
+.names{display:flex; flex-direction:column; gap:8px}
+.name-row{display:flex; align-items:center; gap:10px; background:var(--surface);
+  border:1px solid var(--line); border-radius:12px; padding:0 12px}
+.name-row .idx{
+  width:24px; height:24px; flex:none; display:grid; place-items:center; border-radius:7px;
+  font-size:11px; font-weight:700; color:var(--suit);
+  background:color-mix(in srgb, var(--suit) 16%, transparent);
+}
+.name-row input{flex:1; min-width:0; background:none; border:none; padding:13px 0; font-size:16px}
+.name-row input:focus{outline:none}
+.name-row:focus-within{border-color:var(--suit)}
+.team-chip{
+  flex:none; font-size:9.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--suit); padding:3px 7px; border-radius:5px;
+  background:color-mix(in srgb, var(--suit) 14%, transparent);
+}
+.setup-note{margin:-6px 0 0; font-size:12.5px; color:var(--faint); text-align:center; line-height:1.5}
+
+/* ---------- dağıtan seçici ---------- */
+.dealer-block{display:flex; flex-direction:column; gap:7px}
+.dealer-label{
+  font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--faint); padding-left:3px;
+}
+.dealer-label em{font-style:normal; font-weight:400; font-size:11px; letter-spacing:0; text-transform:none; opacity:.85}
+.dchips{display:grid; grid-template-columns:repeat(4,1fr); gap:6px}
+.dchip{
+  padding:11px 3px; font-size:12.5px; font-weight:600; border-radius:10px;
+  background:var(--surface); border:1px solid var(--line); color:var(--muted);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.dchip:active{background:var(--surface-2)}
+.dchip.on{background:var(--surface-2); border-color:var(--focus); color:var(--text);
+  box-shadow:0 0 0 2px color-mix(in srgb, var(--focus) 22%, transparent)}
+
+/* ---------- archive ---------- */
+.arch-list{list-style:none; margin:0; padding:0}
+.arch-list li{border-top:1px solid var(--line-soft); display:flex; align-items:stretch}
+.arch-item{
+  flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;
+  padding:12px 6px 12px 14px; background:none; border:none; text-align:left; color:inherit;
+}
+.arch-item:active{background:var(--surface-2)}
+.arch-meta{font-size:11px; color:var(--faint); letter-spacing:.01em}
+.arch-win{font-size:14.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.arch-win .sc{font-family:"DM Mono",ui-monospace,monospace; font-weight:400; color:var(--muted); padding-left:6px}
+.arch-rest{font-size:11.5px; color:var(--faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  font-variant-numeric:tabular-nums}
+.arch-del{background:none; border:none; color:var(--faint); font-size:21px; padding:0 14px; flex:none}
+
+.stats-wrap{overflow-x:auto}
+.stats{width:100%; border-collapse:collapse; table-layout:auto; min-width:100%}
+.stats th{
+  padding:7px 8px 9px; font-size:10px; font-weight:700; letter-spacing:.03em; text-transform:uppercase;
+  color:var(--faint); border-bottom:1px solid var(--line); white-space:nowrap; text-align:right;
+}
+.stats th:first-child{text-align:left; padding-left:14px}
+.stats td{
+  padding:10px 8px; font-size:13.5px; text-align:right; white-space:nowrap;
+  border-bottom:1px solid var(--line-soft);
+  font-family:"DM Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums; color:var(--muted);
+}
+.stats td:first-child{
+  text-align:left; padding-left:14px; color:var(--text); font-weight:600;
+  font-family:"Instrument Sans",sans-serif; max-width:118px; overflow:hidden; text-overflow:ellipsis;
+}
+.stats tr:last-child td{border-bottom:none}
+.stats .win{color:var(--text); font-weight:500}
+
+/* ---------- sheets ---------- */
+.backdrop{position:fixed; inset:0; z-index:60; background:rgba(8,14,11,.55)}
+.sheet{
+  position:fixed; left:0; right:0; bottom:0; z-index:61;
+  max-height:92dvh; display:flex; flex-direction:column;
+  background:var(--bg); border-top:1px solid var(--line);
+  border-radius:20px 20px 0 0; box-shadow:var(--sheet-shadow);
+  width:100%; max-width:640px; margin:0 auto;
+}
+@media (prefers-reduced-motion: no-preference){
+  .sheet{animation:rise .22s cubic-bezier(.2,.8,.3,1)}
+  .backdrop{animation:fade .22s ease}
+}
+@keyframes rise{from{transform:translateY(20px); opacity:.5}to{transform:none; opacity:1}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.sheet-grip{width:38px; height:4px; border-radius:2px; background:var(--line); margin:9px auto 0; flex:none}
+.sheet-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding:12px 18px 10px; flex:none}
+.sheet-head h3{font-size:19px; letter-spacing:-.02em}
+.sheet-head .sub{font-size:12.5px; color:var(--faint); white-space:nowrap; flex:none}
+.sheet-body{overflow-y:auto; -webkit-overflow-scrolling:touch; padding:2px 16px 10px; display:flex; flex-direction:column; gap:10px}
+.sheet-foot{flex:none; padding:10px 16px calc(14px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:8px;
+  border-top:1px solid var(--line-soft); background:var(--bg)}
+
+.entry{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:11px 12px 12px; display:flex; flex-direction:column; gap:9px}
+.entry.invalid{border-color:var(--bad); box-shadow:0 0 0 3px color-mix(in srgb, var(--bad) 16%, transparent)}
+.entry-top{display:flex; align-items:center; gap:9px}
+.entry-name{flex:1; min-width:0; font-size:14.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.field{display:flex; align-items:center; background:var(--sunken); border:1px solid var(--line); border-radius:10px; overflow:hidden; flex:none}
+.field input{
+  width:76px; background:none; border:none; padding:9px 2px; text-align:center;
+  font-family:"DM Mono",ui-monospace,monospace; font-size:17px; font-variant-numeric:tabular-nums;
+}
+.field input:focus{outline:none}
+.mini{background:none; border:none; color:var(--text); opacity:.62; width:38px; padding:11px 0; font-size:17px; font-weight:600; line-height:1}
+.mini:active{background:var(--surface-2)}
+.chips{display:grid; grid-template-columns:repeat(4,1fr); gap:6px}
+.chip{
+  padding:10px 2px; font-size:13.5px; font-weight:600; border-radius:9px;
+  background:var(--surface-2); border:1px solid var(--line); color:var(--text);
+  font-family:"DM Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums;
+}
+.chip:active{background:var(--sunken)}
+.chip.on{background:var(--suit); border-color:var(--suit); color:var(--bg)}
+.chips.five{grid-template-columns:repeat(5,1fr)}
+.chip.dbl{font-family:"Instrument Sans",sans-serif; font-size:13px}
+.dbl-note{margin:-2px 2px 0; font-size:12px; color:var(--muted)}
+.dbl-note b{font-family:"DM Mono",ui-monospace,monospace; font-weight:500; color:var(--text)}
+.x2{font-family:"Instrument Sans",sans-serif; font-size:10px; font-weight:600; color:var(--faint); margin-left:2px}
+
+/* ---------- zar ---------- */
+.act-row{display:flex; gap:8px}
+.act-row .btn-primary{flex:1; width:auto}
+.dice-btn{
+  flex:none; display:flex; align-items:center; gap:7px; padding:0 16px;
+  border-radius:12px; border:1px solid var(--line); background:var(--surface); color:var(--text);
+  font-weight:600; font-size:15px;
+}
+.dice-btn:active{background:var(--surface-2)}
+.dice-row{display:flex; justify-content:center; gap:18px; padding:18px 0 8px}
+.die{
+  width:88px; height:88px; padding:14px; display:grid;
+  grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); border-radius:18px;
+}
+.die i{width:15px; height:15px; border-radius:50%; place-self:center; background:transparent}
+.die i.on{background:var(--tile-text)}
+.die.small{width:44px; height:44px; padding:7px; border-radius:10px}
+.die.small i{width:8px; height:8px}
+@media (prefers-reduced-motion: no-preference){ .die.rolling{animation:shake .12s linear infinite} }
+@keyframes shake{0%{transform:rotate(-7deg)}50%{transform:rotate(7deg)}100%{transform:rotate(-7deg)}}
+.dice-sum{text-align:center; font-size:14px; color:var(--muted)}
+.dice-sum b{font-family:"Bricolage Grotesque",sans-serif; font-size:26px; color:var(--text); letter-spacing:-.02em; padding:0 4px}
+.dice-sum em{display:block; font-style:normal; font-weight:700; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--suit-0); margin-top:2px; min-height:16px}
+
+/* ---------- canlı ---------- */
+.live-chip{
+  display:inline-flex; align-items:center; gap:6px; flex:none;
+  font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--bad); padding:5px 9px; border-radius:7px;
+  background:color-mix(in srgb, var(--bad) 13%, transparent);
+}
+.live-chip::before{content:""; width:7px; height:7px; border-radius:50%; background:currentColor}
+@media (prefers-reduced-motion: no-preference){ .live-chip::before{animation:pulse 1.6s ease-in-out infinite} }
+@keyframes pulse{50%{opacity:.25}}
+.live-chip.off{color:var(--faint); background:var(--surface-2)}
+.live-chip.off::before{animation:none}
+.live-meta{display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:12px; color:var(--faint); padding:0 3px}
+.live-dice{display:flex; align-items:center; gap:10px; padding:4px 14px 14px}
+.live-dice span{font-size:13px; color:var(--muted)}
+.link-box{
+  display:block; width:100%; padding:13px; border-radius:12px; word-break:break-all;
+  background:var(--surface); border:1px solid var(--line); color:var(--text);
+  font-family:"DM Mono",ui-monospace,monospace; font-size:13px;
+}
+@media (prefers-reduced-motion: no-preference){ tr.fresh td{animation:fresh 2.4s ease} }
+@keyframes fresh{0%{background:color-mix(in srgb, var(--focus) 22%, transparent)}100%{background:transparent}}
+
+.sheet-note{display:flex; justify-content:space-between; align-items:center; padding:2px 6px 0; font-size:12.5px; color:var(--faint)}
+.sheet-note b{font-family:"DM Mono",ui-monospace,monospace; color:var(--muted); font-weight:500; font-size:14px}
+.err{margin:0; font-size:13px; color:var(--bad); text-align:center; font-weight:500}
+.desc{margin:0 0 2px; font-size:13.5px; color:var(--muted); padding:0 2px; line-height:1.5}
+.desc b{color:var(--text)}
+
+.picker{display:grid; grid-template-columns:repeat(2,1fr); gap:8px}
+.picker.one{grid-template-columns:1fr}
+.pick{
+  display:flex; align-items:center; gap:9px; padding:13px 12px; text-align:left;
+  background:var(--surface); border:1px solid var(--line); border-radius:12px; font-size:14.5px; font-weight:600;
+  overflow:hidden; color:var(--text);
+}
+.pick .t{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.pick.on{border-color:var(--suit); background:color-mix(in srgb, var(--suit) 12%, var(--surface))}
+
+.sbtn{padding:15px; border-radius:12px; font-size:15.5px; font-weight:600; border:1px solid var(--line); background:var(--surface-2); color:var(--text); width:100%; text-align:center}
+.sbtn:active{background:var(--sunken)}
+.sbtn.danger{color:var(--bad); border-color:color-mix(in srgb, var(--bad) 35%, var(--line)); background:transparent}
+.sbtn[disabled]{opacity:.4; cursor:default}
+.menu-list{display:flex; flex-direction:column; gap:8px}
+
+.share-box{
+  width:100%; min-height:230px; resize:vertical; padding:13px; border-radius:12px;
+  background:var(--surface); border:1px solid var(--line); color:var(--text);
+  font-family:"DM Mono",ui-monospace,monospace; font-size:12.5px; line-height:1.55;
+}
+
+.toast{
+  position:fixed; left:50%; transform:translateX(-50%); z-index:80;
+  bottom:calc(104px + env(safe-area-inset-bottom));
+  display:flex; align-items:center; gap:14px; padding:11px 12px 11px 16px;
+  background:var(--tile-bg); color:var(--tile-text); border-radius:12px;
+  box-shadow:0 8px 28px rgba(0,0,0,.35); font-size:13.5px; max-width:calc(100vw - 32px);
+}
+.toast button{background:none; border:none; color:inherit; font-weight:700; font-size:13.5px; text-decoration:underline; padding:2px 4px; white-space:nowrap}
+@media (prefers-reduced-motion: no-preference){.toast{animation:rise .18s ease}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.01ms !important; transition-duration:.01ms !important}}
+[hidden]{display:none !important}
+</style>
+
+<header class="topbar" id="topbar" hidden></header>
+<main id="main"></main>
+<div class="actionbar" id="actionbar" hidden>
+  <div class="next-dealer" id="nextDealer"></div>
+  <div class="act-row">
+    <button class="dice-btn" id="diceBtn" aria-label="Zar at">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><rect x="1.5" y="1.5" width="15" height="15" rx="4" stroke="currentColor" stroke-width="1.6"/><circle cx="6" cy="6" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="9" cy="9" r="1.4" fill="currentColor"/></svg>
+      Zar At
+    </button>
+    <button class="btn-primary tile" id="newHandBtn">Yeni El Skoru Gir</button>
+  </div>
+</div>
+<div id="overlay"></div>
+<div id="toastRoot"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ===================== depolama ===================== */
+var K_GAME = "okey101.game.v2", K_ARCH = "okey101.arch.v1", K_OLD = "okey101.v1";
+var mem = {};
+function get(k){
+  try{ var r = localStorage.getItem(k); return r ? JSON.parse(r) : (mem[k] || null); }
+  catch(e){ return mem[k] || null; }
+}
+function put(k, v){ mem[k] = v; try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function drop(k){ delete mem[k]; try{ localStorage.removeItem(k); }catch(e){} }
+
+function blankGame(mode, players, firstDealer){
+  return { mode: mode || "solo", players: players || ["","","",""],
+           hands: [], dealers: [], dbl: [], extras: [], seq: 1, started: false,
+           firstDealer: firstDealer == null ? 0 : firstDealer, roll: null };
+}
+
+var G = get(K_GAME);
+if(!G || !G.players || G.players.length !== 4){
+  var old = get(K_OLD);                                   /* eski tek modlu kayıt taşınır */
+  if(old && old.players && old.players.length === 4){
+    G = { mode:"solo", players:old.players.map(String), hands:old.hands || [],
+          dealers:[], extras:old.extras || [], seq:old.seq || 1, started:!!old.started, firstDealer:0 };
+    put(K_GAME, G); drop(K_OLD);
+  } else G = blankGame();
+}
+if(G.mode !== "team" && G.mode !== "solo") G.mode = "solo";
+if(!Array.isArray(G.dealers)) G.dealers = [];
+if(G.firstDealer == null) G.firstDealer = 0;
+while(G.dealers.length < G.hands.length) G.dealers.push(null);   /* eski eller: dağıtan bilinmiyor */
+if(!Array.isArray(G.dbl)) G.dbl = [];
+while(G.dbl.length < G.hands.length) G.dbl.push(null);           /* eski eller: çift değil */
+
+var ARCH = get(K_ARCH) || [];
+var VIEW = G.started ? "game" : "setup";
+
+function saveGame(){ put(K_GAME, G); scheduleLive(); }
+function saveArch(){ put(K_ARCH, ARCH); }
+function snapshot(){ return JSON.parse(JSON.stringify({ g:G, a:ARCH, v:VIEW })); }
+function restore(s){ G = s.g; ARCH = s.a; VIEW = s.v; saveGame(); saveArch(); render(); }
+
+/* ===================== canlı skor ===================== */
+/* Skoru tutan her değişikliği tek bir canlı kayda yazar; izleyiciler o kayda abone olup
+   skoru anında görür. İki arka uç var:
+   - claude.ai'de açıldığında sayfanın kendi veritabanı (izleyici Claude hesabıyla girer),
+   - kendi sitenizde açıldığında Firebase (link herkese açık: ?izle=<oyun kodu>). */
+
+/* Firebase konsolu > Proje ayarları > "Web uygulaması" config nesnesini buraya yapıştırın. */
+var FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDFHObTOeSqQF3UF3eODP_KvH9SL5z_Iow",
+  authDomain: "yazboz-42be7.firebaseapp.com",
+  databaseURL: "https://yazboz-42be7-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "yazboz-42be7",
+  storageBucket: "yazboz-42be7.firebasestorage.app",
+  messagingSenderId: "24314590801",
+  appId: "1:24314590801:web:d29a8b0e340e5f6144ea70"
+};
+
+var FB_VER = "10.12.2";
+var IN_CLAUDE = !!(window.claude && typeof window.claude.use === "function");
+var WATCH_ID = (function(){
+  try{ var m = /[?&]izle=([A-Za-z0-9]{4,40})/.exec(location.search); return m ? m[1] : null; }
+  catch(e){ return null; }
+})();
+var LIVE_URL = IN_CLAUDE ? "https://claude.ai/artifact/Dzi7Sn17d2tT1zKWq9ivP9" : null;
+var LIVE_KIND = IN_CLAUDE ? "claude" : (FIREBASE_CONFIG ? "firebase" : null);
+var liveRef = null, CAN_WRITE = false;
+var LIVE = null, liveLoaded = false;   /* izleyicide: son gelen oyun durumu */
+var liveState = "off";                 /* off | on | error */
+var liveTimer = null, liveBusy = false, livePending = false;
+
+function livePayload(){
+  return { game: JSON.parse(JSON.stringify({
+             mode:G.mode, players:G.players, hands:G.hands, dealers:G.dealers, dbl:G.dbl,
+             extras:G.extras, started:G.started, firstDealer:G.firstDealer, roll:G.roll || null })),
+           updatedAt: Date.now() };
+}
+function scheduleLive(){
+  if(!liveRef || !CAN_WRITE) return;
+  clearTimeout(liveTimer);
+  liveTimer = setTimeout(pushLive, 350);
+}
+function pushLive(){
+  if(liveBusy){ livePending = true; return; }
+  liveBusy = true;
+  liveRef.set(livePayload()).then(function(){
+    liveState = "on";
+  }, function(e){
+    liveState = "error";
+    if(e && e.code === "invalid_argument") CAN_WRITE = false;
+  }).then(function(){
+    liveBusy = false;
+    if(livePending){ livePending = false; pushLive(); }
+  });
+}
+
+function withTimeout(p, ms){
+  return Promise.race([p, new Promise(function(r){ setTimeout(function(){ r(null); }, ms); })]);
+}
+function loadScript(src){
+  return new Promise(function(ok, fail){
+    var s = document.createElement("script");
+    s.src = src; s.onload = ok; s.onerror = fail;
+    document.head.appendChild(s);
+  });
+}
+function randomId(){
+  var abc = "abcdefghjkmnpqrstuvwxyz23456789", out = "";
+  try{ var a = new Uint32Array(8); crypto.getRandomValues(a); for(var i=0;i<8;i++) out += abc[a[i] % abc.length]; }
+  catch(e){ for(var j=0;j<8;j++) out += abc[Math.floor(Math.random() * abc.length)]; }
+  return out;
+}
+
+/* ---- claude.ai veritabanı ---- */
+function initClaude(){
+  return withTimeout(Promise.all([
+    window.claude.use("db").catch(function(){ return null; }),
+    window.claude.use("user").catch(function(){ return null; })
+  ]).then(function(r){
+    var db = r[0], user = r[1];
+    if(!db) return null;
+    var doc = db.doc("live/current");
+    liveRef = {
+      set: function(p){ return doc.set(p); },
+      watch: function(next, err){
+        doc.onSnapshot(function(snap){ next(snap.exists ? snap.data() : null); }, err);
+      }
+    };
+    if(!user) return "scorer";
+    return user.canEdit().then(function(ok){ return ok ? "scorer" : "watcher"; }, function(){ return "scorer"; });
+  }), 4000);
+}
+
+/* ---- Firebase Realtime Database ---- */
+/* Oyun durumu tek bir JSON metni olarak saklanır (Firebase boş dizileri ve null'ları siler). */
+var K_LIVEID = "okey101.liveid";
+function initFirebase(){
+  var base = "https://www.gstatic.com/firebasejs/" + FB_VER + "/";
+  return loadScript(base + "firebase-app-compat.js")
+    .then(function(){ return Promise.all([
+      loadScript(base + "firebase-database-compat.js"),
+      loadScript(base + "firebase-auth-compat.js") ]); })
+    .then(function(){
+      var app = firebase.apps.length ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
+      var rtdb = app.database();
+      function refFor(id){
+        var r = rtdb.ref("games/" + id);
+        return {
+          set: function(p){
+            var u = app.auth().currentUser;
+            return r.set({ owner: u ? u.uid : "", data: JSON.stringify(p.game), updatedAt: p.updatedAt })
+              .catch(function(e){ throw { code: /permission/i.test(String(e && (e.code || e.message))) ? "invalid_argument" : "unavailable" }; });
+          },
+          watch: function(next, err){
+            r.on("value", function(snap){
+              var v = snap.val(), game = null;
+              try{ game = v && v.data ? JSON.parse(v.data) : null; }catch(e){}
+              next(game ? { game: game, updatedAt: v.updatedAt } : null);
+            }, err);
+          }
+        };
+      }
+      if(WATCH_ID){ liveRef = refFor(WATCH_ID); return "watcher"; }
+
+      return app.auth().signInAnonymously().then(function(){
+        var id = get(K_LIVEID);
+        if(!id){ id = randomId(); put(K_LIVEID, id); }
+        liveRef = refFor(id);
+        LIVE_URL = location.origin + location.pathname + "?izle=" + id;
+        return "scorer";
+      });
+    })
+    .catch(function(){ liveState = "error"; return null; });
+}
+
+function initLive(){
+  var p = LIVE_KIND === "claude" ? initClaude()
+        : LIVE_KIND === "firebase" ? initFirebase()
+        : Promise.resolve(null);
+  return p.then(function(role){
+    if(!liveRef || !role) return;
+    if(role === "watcher"){ startWatching(); VIEW = "watch"; }
+    else {
+      CAN_WRITE = true; liveState = "on";
+      if(LIVE_KIND === "firebase") scheduleLive();   /* kendi sitemizde: açılışta güncel durumu yay */
+    }
+  });
+}
+var lastSeenHands = -1, freshRow = -1;
+function startWatching(){
+  liveRef.watch(function(d){
+    LIVE = d && d.game ? { g: JSON.parse(JSON.stringify(d.game)), at: d.updatedAt } : null;
+    liveLoaded = true; liveState = "on";
+    var n = LIVE ? (LIVE.g.hands || []).length : 0;
+    freshRow = (lastSeenHands >= 0 && n > lastSeenHands) ? n - 1 : -1;
+    lastSeenHands = n;
+    if(VIEW === "watch") render();
+  }, function(){ liveState = "error"; if(VIEW === "watch") render(); });
+}
+
+/* ===================== yardımcılar ===================== */
+function esc(s){ return String(s).replace(/[&<>"']/g, function(c){
+  return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]; }); }
+function fmt(n){ return n < 0 ? "−" + Math.abs(n) : String(n); }
+function plain(n){ return String(n); }
+
+function nEnt(g){ return g.mode === "team" ? 2 : 4; }
+function pName(g, i){ var v = (g.players[i] || "").trim(); return v || ((i+1) + ". oyuncu"); }
+function entName(g, k){ return g.mode === "team" ? pName(g,k) + " & " + pName(g,k+2) : pName(g,k); }
+function entMembers(g, k){ return g.mode === "team" ? [k, k+2] : [k]; }
+function teamOf(i){ return i % 2; }                       /* kurulumda 1–3 ve 2–4 eş */
+
+function hSum(g, k){ var t=0; for(var i=0;i<g.hands.length;i++) t += g.hands[i][k]; return t; }
+function xSum(g, k){ var t=0; for(var i=0;i<g.extras.length;i++) if(g.extras[i].p===k) t += g.extras[i].v; return t; }
+function tot(g, k){ return hSum(g,k) + xSum(g,k); }
+function totals(g){ var a=[]; for(var k=0;k<nEnt(g);k++) a.push(tot(g,k)); return a; }
+function leaders(g){
+  var t = totals(g), m = Math.min.apply(null, t), out = [];
+  for(var i=0;i<t.length;i++) if(t[i] === m) out.push(i);
+  return out;
+}
+function modeLabel(g){ return g.mode === "team" ? "Eşli" : "4'lü"; }
+function dateLabel(ts){
+  try{ return new Date(ts).toLocaleDateString("tr-TR", {day:"numeric", month:"long", year:"numeric"}); }
+  catch(e){ return ""; }
+}
+
+/* ---- dağıtan ---- */
+function dealersOf(g){ return Array.isArray(g.dealers) ? g.dealers : []; }
+function nextDealer(g){
+  var d = dealersOf(g);
+  if(!g.hands.length) return g.firstDealer == null ? 0 : g.firstDealer;
+  var last = d[g.hands.length - 1];
+  if(last == null) return g.firstDealer == null ? 0 : g.firstDealer;
+  return (last + 1) % 4;
+}
+/* Bir elin dağıtanı değişince sonraki eller sırayla yeniden türetilir. */
+function recascade(g, from){
+  for(var h = from + 1; h < g.hands.length; h++){
+    var prev = g.dealers[h-1];
+    g.dealers[h] = prev == null ? null : (prev + 1) % 4;
+  }
+}
+
+/* ===================== görünüm ===================== */
+var main = document.getElementById("main");
+var topbar = document.getElementById("topbar");
+var actionbar = document.getElementById("actionbar");
+var nextDealerEl = document.getElementById("nextDealer");
+
+function render(){
+  if(VIEW === "watch"){ renderWatch(); return; }
+  if(VIEW === "setup"){ renderSetup(); return; }
+  if(VIEW === "archive"){ renderArchive(); return; }
+  renderGame();
+}
+
+function isDbl(g, r, c){ return !!(g.dbl && g.dbl[r] && g.dbl[r][c]); }
+
+function topbarGame(){
+  topbar.hidden = false;
+  topbar.innerHTML =
+      '<div class="brand"><span class="brand-mark tile">101</span><span style="min-width:0">'
+    +   '<span class="brand-text">Yaz Boz</span><br>'
+    +   '<span class="brand-sub">' + modeLabel(G) + ' · '
+    +     (G.hands.length ? G.hands.length + " el oynandı" : "henüz el girilmedi") + '</span>'
+    + '</span></div>'
+    + '<button class="icon-btn" id="menuBtn" aria-label="Seçenekler">'
+    +   '<svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" aria-hidden="true">'
+    +   '<circle cx="9" cy="3.5" r="1.6"/><circle cx="9" cy="9" r="1.6"/><circle cx="9" cy="14.5" r="1.6"/></svg></button>';
+  document.getElementById("menuBtn").addEventListener("click", openMenu);
+}
+
+function topbarBack(title, onBack){
+  topbar.hidden = false;
+  topbar.innerHTML =
+      '<div class="brand">'
+    +   '<button class="icon-btn" id="backBtn" aria-label="Geri">'
+    +     '<svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="2" '
+    +     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.5 3.5 5 8.5l5.5 5"/></svg>'
+    +   '</button>'
+    +   '<span class="brand-text">' + esc(title) + '</span>'
+    + '</div><span></span>';
+  document.getElementById("backBtn").addEventListener("click", onBack);
+}
+
+/* ---------- oyun ekranı ---------- */
+function renderGame(){
+  topbarGame();
+  actionbar.hidden = false;
+  nextDealerEl.innerHTML = (G.hands.length ? "Sıradaki dağıtan · " : "İlk dağıtan · ")
+    + '<b>' + esc(pName(G, nextDealer(G))) + '</b>';
+  main.innerHTML = standingsHTML(G) + tableCardHTML(G, true) + ledgerHTML(G, true);
+}
+
+/* ---------- canlı izleme ekranı ---------- */
+function timeLabel(ts){
+  try{ return new Date(ts).toLocaleTimeString("tr-TR", {hour:"2-digit", minute:"2-digit"}); }
+  catch(e){ return ""; }
+}
+function normLive(g){
+  g.hands = g.hands || []; g.extras = g.extras || []; g.dealers = g.dealers || []; g.dbl = g.dbl || [];
+  g.players = g.players || ["","","",""];
+  return g;
+}
+function renderWatch(){
+  actionbar.hidden = true;
+  var g = LIVE ? normLive(LIVE.g) : null;
+  topbar.hidden = false;
+  topbar.innerHTML =
+      '<div class="brand"><span class="brand-mark tile">101</span><span style="min-width:0">'
+    +   '<span class="brand-text">Canlı Skor</span><br>'
+    +   '<span class="brand-sub">' + (g ? modeLabel(g) + ' · ' + (g.hands.length ? g.hands.length + " el oynandı" : "henüz el girilmedi") : "Okey 101 Yaz Boz") + '</span>'
+    + '</span></div>'
+    + '<span class="live-chip' + (liveState === "on" ? "" : " off") + '">' + (liveState === "on" ? "Canlı" : "Bağlantı yok") + '</span>';
+
+  if(!g){
+    main.innerHTML = '<section class="card"><div class="empty">' + (liveLoaded
+      ? 'Henüz canlı oyun yok.<br>Skor tutan kişi ilk eli girdiğinde burada anında görünür.'
+      : (liveState === "error" ? 'Canlı skora bağlanılamadı.<br>Linki kontrol edip sayfayı yenileyin.' : 'Canlı skora bağlanılıyor…')) + '</div></section>';
+    return;
+  }
+  var h = '<div class="live-meta"><span>' + esc(g.started ? "Oyun sürüyor" : "Yeni oyun hazırlanıyor") + '</span>'
+        + '<span>' + (LIVE.at ? "son güncelleme " + esc(timeLabel(LIVE.at)) : "") + '</span></div>'
+        + standingsHTML(g) + tableCardHTML(g, false) + ledgerHTML(g, false);
+  if(g.roll && g.roll.d){
+    h += '<section class="card"><div class="card-head"><h2>Son Zar</h2><span class="hint">' + esc(timeLabel(g.roll.at)) + '</span></div>'
+       + '<div class="live-dice">' + dieHTML(g.roll.d[0], true) + dieHTML(g.roll.d[1], true) + '</div></section>';
+  }
+  main.innerHTML = h;
+  if(freshRow >= 0){
+    var tr = main.querySelector('tr[data-row="' + freshRow + '"]');
+    if(tr) tr.classList.add("fresh");
+    freshRow = -1;
+  }
+}
+
+function standingsHTML(g){
+  var t = totals(g), any = g.hands.length > 0 || g.extras.length > 0;
+  var lead = leaders(g), n = nEnt(g);
+
+  var h = '<section class="standings-wrap">'
+        + '<div class="sec-label">Genel Toplam <em>rekor ve cezalar dahil</em></div>'
+        + '<div class="standings' + (n === 2 ? " two" : "") + '">';
+  for(var i=0;i<n;i++){
+    var isLead = any && lead.indexOf(i) >= 0;
+    var ex = xSum(g,i);
+    h += '<div class="ptile' + (isLead ? " lead" : "") + '" style="--suit:var(--suit-' + i + ')">'
+       +   '<div class="ptile-name">' + esc(entName(g,i)) + '</div>'
+       +   '<div class="ptile-total">' + fmt(t[i]) + '</div>'
+       +   (ex ? '<div class="ptile-sub">' + fmt(hSum(g,i)) + ' <i>' + (ex < 0 ? "−" : "+") + '</i> ' + Math.abs(ex) + '</div>'
+             : '<div class="ptile-sub">&nbsp;</div>')
+       +   (isLead ? '<span class="lead-flag">önde</span>' : '')
+       + '</div>';
+  }
+  return h + '</div></section>';
+}
+
+function tableCardHTML(g, editable){
+  var n = nEnt(g), d = dealersOf(g);
+  var h = '<section class="card"><div class="card-head"><h2>El Skorları</h2>'
+        + '<span class="hint">' + (editable && g.hands.length ? "düzeltmek için ele dokun" : "") + '</span></div>';
+  if(!g.hands.length){
+    return h + '<div class="empty">Henüz el girilmedi.' + (editable ? '<br>Aşağıdaki butondan ilk elin skorlarını girin.' : '') + '</div></section>';
+  }
+  h += '<div class="gridwrap"><table><thead><tr><th class="el">El · Dağıtan</th>';
+  for(var i=0;i<n;i++) h += '<th class="p" style="--suit:var(--suit-' + i + ')">' + esc(entName(g,i)) + '</th>';
+  h += '</tr></thead><tbody>';
+  for(var r=0;r<g.hands.length;r++){
+    var dn = d[r] == null ? "·" : pName(g, d[r]);
+    h += '<tr data-row="' + r + '"' + (editable ? ' data-hand="' + r + '" role="button" tabindex="0" aria-label="' + (r+1) + '. eli düzelt"' : '')
+       + '><td class="el"><b>' + (r+1) + '.</b><span class="dlr">' + esc(dn) + '</span></td>';
+    for(var c=0;c<n;c++){
+      var v = g.hands[r][c];
+      h += '<td class="' + (v < 0 ? "neg" : "") + '">' + fmt(v)
+         + (isDbl(g, r, c) ? '<span class="x2" title="çift">(ç)</span>' : '') + '</td>';
+    }
+    h += '</tr>';
+  }
+  h += '</tbody><tfoot>';
+  if(g.extras.length){
+    h += '<tr class="sub"><td class="el">El toplamı</td>';
+    for(var k=0;k<n;k++) h += '<td>' + fmt(hSum(g,k)) + '</td>';
+    h += '</tr><tr class="sub"><td class="el">Rekor / ceza</td>';
+    for(var m=0;m<n;m++){ var ex = xSum(g,m); h += '<td>' + (ex ? fmt(ex) : "·") + '</td>'; }
+    h += '</tr>';
+  }
+  h += '<tr class="grand"><td class="el">Genel toplam</td>';
+  for(var q=0;q<n;q++) h += '<td>' + fmt(tot(g,q)) + '</td>';
+  return h + '</tr></tfoot></table></div></section>';
+}
+
+function ledgerHTML(g, editable){
+  var h = '<section class="card"><div class="card-head"><h2>Rekor ve Cezalar</h2>'
+        + (editable ? '<div class="seg"><button data-add="rekor">+ Rekor</button><button data-add="ceza">+ Ceza</button></div>' : '')
+        + '</div>';
+  if(!g.extras.length){
+    return h + '<div class="empty">Rekor veya ceza yok.' + (editable ? '<br>Eklenenler el skorlarına değil, doğrudan genel toplama işlenir.' : '') + '</div></section>';
+  }
+  h += '<ul class="ledger">';
+  for(var i=0;i<g.extras.length;i++){
+    var e = g.extras[i];
+    h += '<li style="--suit:var(--suit-' + e.p + ')">'
+       +   '<span class="dot"></span>'
+       +   '<span class="led-name">' + esc(entName(g, e.p)) + '</span>'
+       +   '<span class="badge ' + e.t + '">' + (e.t === "rekor" ? "Rekor" : "Ceza") + '</span>'
+       +   '<span class="led-val">' + fmt(e.v) + '</span>'
+       +   (editable ? '<button class="led-del" data-del="' + e.id + '" aria-label="' + esc(entName(g, e.p)) + ' kaydını sil">&times;</button>' : '')
+       + '</li>';
+  }
+  return h + '</ul></section>';
+}
+
+/* ---------- kurulum ekranı ---------- */
+function readSetupNames(){
+  for(var i=0;i<4;i++){
+    var el = document.getElementById("nm" + i);
+    if(el) G.players[i] = el.value;
+  }
+}
+function dealerChipsHTML(sel){
+  var h = '<div class="dchips">';
+  for(var i=0;i<4;i++)
+    h += '<button class="dchip' + (sel === i ? " on" : "") + '" data-d="' + i + '">' + esc(pName(G,i)) + '</button>';
+  return h + '</div>';
+}
+
+function renderSetup(){
+  topbar.hidden = true; actionbar.hidden = true;
+  var team = G.mode === "team";
+  var h = '<div class="setup"><div class="setup-hero">'
+        + '<div class="hero-mark tile">101</div>'
+        + '<h1>Okey 101 Yaz&nbsp;Boz</h1>'
+        + '<p>Oyun türünü seçin, isimleri yazın, ilk dağıtanı işaretleyin.</p>'
+        + '</div>'
+        + '<div class="modes">'
+        +   '<button class="mode-btn' + (team ? " on" : "") + '" data-mode="team">Eşli<em>iki eş, ikişer kişi</em></button>'
+        +   '<button class="mode-btn' + (team ? "" : " on") + '" data-mode="solo">4\'lü<em>herkes kendi başına</em></button>'
+        + '</div><div class="names">';
+  for(var i=0;i<4;i++){
+    var suit = team ? teamOf(i) : i;
+    h += '<label class="name-row" style="--suit:var(--suit-' + suit + ')">'
+       +   '<span class="idx">' + (i+1) + '</span>'
+       +   '<input type="text" id="nm' + i + '" value="' + esc(G.players[i] || "") + '" placeholder="' + (i+1) + '. oyuncu" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="next">'
+       +   (team ? '<span class="team-chip">' + (teamOf(i) + 1) + '. eş</span>' : "")
+       + '</label>';
+  }
+  h += '</div>'
+     + '<div class="dealer-block"><span class="dealer-label">İlk dağıtan <em>· sonraki eller sırayla döner</em></span>'
+     +   dealerChipsHTML(G.firstDealer) + '</div>'
+     + '<p class="setup-note">' + (team
+          ? "Karşılıklı oturanlar eş olur: 1 ile 3, 2 ile 4. Her el için eş başına tek skor girilir."
+          : "Her el için dört oyuncunun da skoru ayrı girilir.") + '</p>'
+     + '<button class="btn-primary tile" id="startBtn">Oyunu Başlat</button>'
+     + '<button class="sbtn" id="setupDice">Zar At · ilk dağıtanı belirleyin</button>'
+     + (ARCH.length ? '<button class="sbtn" id="toArchive">Geçmiş Oyunlar · ' + ARCH.length + '</button>' : "")
+     + '</div>';
+  main.innerHTML = h;
+
+  var modeBtns = main.querySelectorAll(".mode-btn");
+  for(var b=0;b<modeBtns.length;b++) modeBtns[b].addEventListener("click", function(){
+    var m = this.getAttribute("data-mode");
+    if(m === G.mode) return;
+    readSetupNames(); G.mode = m; saveGame(); render();
+  });
+
+  var dchips = main.querySelectorAll(".dchip");
+  for(var c=0;c<dchips.length;c++) dchips[c].addEventListener("click", function(){
+    G.firstDealer = Number(this.getAttribute("data-d"));
+    var all = main.querySelectorAll(".dchip");
+    for(var j=0;j<all.length;j++)
+      all[j].classList.toggle("on", Number(all[j].getAttribute("data-d")) === G.firstDealer);
+    saveGame();
+  });
+
+  document.getElementById("startBtn").addEventListener("click", function(){
+    readSetupNames();
+    for(var i=0;i<4;i++){
+      var v = (G.players[i] || "").trim();
+      G.players[i] = v || ((i+1) + ". oyuncu");
+    }
+    G.started = true; VIEW = "game"; saveGame(); render();
+  });
+
+  document.getElementById("setupDice").addEventListener("click", openDiceSheet);
+
+  var toArch = document.getElementById("toArchive");
+  if(toArch) toArch.addEventListener("click", function(){ VIEW = "archive"; render(); });
+}
+
+/* ---------- arşiv ekranı ---------- */
+function normKey(s){ return String(s).trim().toLocaleLowerCase("tr").replace(/\s+/g, " "); }
+
+function computeStats(){
+  var m = {}, order = [];
+  function rec(nm){
+    var k = normKey(nm);
+    if(!m[k]){ m[k] = { name:nm, games:0, wins:0, hands:0, pts:0, rekor:0, best:null, deals:0 }; order.push(k); }
+    m[k].name = nm;
+    return m[k];
+  }
+  for(var a=0;a<ARCH.length;a++){
+    var g = ARCH[a], win = leaders(g), n = nEnt(g);
+    for(var k=0;k<n;k++){
+      var mem2 = entMembers(g,k), isWin = win.indexOf(k) >= 0;
+      var rekorCount = 0;
+      for(var e=0;e<g.extras.length;e++) if(g.extras[e].p === k && g.extras[e].t === "rekor") rekorCount++;
+      for(var j=0;j<mem2.length;j++){
+        var st = rec(pName(g, mem2[j]));
+        st.games++; if(isWin) st.wins++;
+        st.rekor += rekorCount;
+        for(var h=0;h<g.hands.length;h++){
+          var v = g.hands[h][k];
+          st.hands++; st.pts += v;
+          if(st.best === null || v < st.best) st.best = v;
+        }
+      }
+    }
+  }
+  var arr = order.map(function(k){ return m[k]; });
+  arr.sort(function(x,y){ return y.wins - x.wins || y.games - x.games || x.name.localeCompare(y.name, "tr"); });
+  return arr;
+}
+
+function renderArchive(){
+  actionbar.hidden = true;
+  topbarBack("Geçmiş Oyunlar", function(){ VIEW = G.started ? "game" : "setup"; render(); });
+
+  var stats = computeStats();
+  var h = "";
+
+  h += '<section class="card"><div class="card-head"><h2>Oyuncu İstatistikleri</h2>'
+     + '<span class="hint">' + (ARCH.length ? ARCH.length + " oyun" : "") + '</span></div>';
+  if(!stats.length){
+    h += '<div class="empty">Henüz arşivlenmiş oyun yok.<br>Bir oyunu bitirdiğinizde buraya işlenir.</div>';
+  } else {
+    h += '<div class="stats-wrap"><table class="stats"><thead><tr>'
+       + '<th>Oyuncu</th><th>Oyun</th><th>Galip</th><th>Ort. el</th><th>Rekor</th><th>En iyi</th>'
+       + '</tr></thead><tbody>';
+    for(var i=0;i<stats.length;i++){
+      var s = stats[i];
+      var avg = s.hands ? Math.round(s.pts / s.hands) : null;
+      h += '<tr><td>' + esc(s.name) + '</td>'
+         +   '<td>' + s.games + '</td>'
+         +   '<td class="win">' + s.wins + '</td>'
+         +   '<td>' + (avg === null ? "·" : fmt(avg)) + '</td>'
+         +   '<td>' + (s.rekor || "·") + '</td>'
+         +   '<td>' + (s.best === null ? "·" : fmt(s.best)) + '</td></tr>';
+    }
+    h += '</tbody></table></div>';
+  }
+  h += '</section>';
+
+  h += '<section class="card"><div class="card-head"><h2>Oyunlar</h2>'
+     + '<span class="hint">' + (ARCH.length ? "detay için dokun" : "") + '</span></div>';
+  if(!ARCH.length){
+    h += '<div class="empty">Arşiv boş.</div>';
+  } else {
+    h += '<ul class="arch-list">';
+    for(var a = ARCH.length - 1; a >= 0; a--){
+      var g = ARCH[a], win = leaders(g), n = nEnt(g);
+      var rest = [];
+      for(var k=0;k<n;k++) if(win.indexOf(k) < 0) rest.push(entName(g,k) + " " + fmt(tot(g,k)));
+      h += '<li>'
+         +   '<button class="arch-item" data-game="' + a + '">'
+         +     '<span class="arch-meta">' + esc(dateLabel(g.endedAt)) + ' · ' + modeLabel(g) + ' · ' + g.hands.length + ' el</span>'
+         +     '<span class="arch-win">🏆 ' + esc(entName(g, win[0])) + '<span class="sc">' + fmt(tot(g, win[0])) + '</span></span>'
+         +     '<span class="arch-rest">' + esc(rest.join("  ·  ")) + '</span>'
+         +   '</button>'
+         +   '<button class="arch-del" data-delgame="' + a + '" aria-label="Oyunu arşivden sil">&times;</button>'
+         + '</li>';
+    }
+    h += '</ul>';
+  }
+  h += '</section>';
+  main.innerHTML = h;
+}
+
+/* ===================== paneller ===================== */
+var overlay = document.getElementById("overlay");
+var onEsc = null;
+
+function openSheet(inner, onOpen){
+  overlay.innerHTML = '<div class="backdrop" data-close></div>'
+    + '<div class="sheet" role="dialog" aria-modal="true"><div class="sheet-grip"></div>' + inner + '</div>';
+  overlay.querySelector("[data-close]").addEventListener("click", closeSheet);
+  onEsc = function(e){ if(e.key === "Escape") closeSheet(); };
+  document.addEventListener("keydown", onEsc);
+  if(onOpen) onOpen(overlay.querySelector(".sheet"));
+}
+function closeSheet(){
+  overlay.innerHTML = "";
+  if(onEsc){ document.removeEventListener("keydown", onEsc); onEsc = null; }
+}
+
+function parseVal(raw){
+  var s = String(raw).trim().replace(/−/g, "-").replace(/\s/g, "");
+  if(s === "" || s === "-") return null;
+  if(!/^-?\d{1,6}$/.test(s)) return null;
+  return parseInt(s, 10);
+}
+function sanitize(el){
+  el.value = el.value.replace(/[^\d-]/g, "").replace(/(?!^)-/g, "").slice(0, 7);
+}
+
+/* ---------- el girişi ---------- */
+var QUICK = [-101, -202, 101, 202];
+
+function openHandSheet(editIdx){
+  var isEdit = editIdx != null;
+  var n = nEnt(G);
+  var vals = isEdit ? G.hands[editIdx].slice() : [];
+  var no = isEdit ? editIdx + 1 : G.hands.length + 1;
+  var dealer = isEdit ? G.dealers[editIdx] : nextDealer(G);
+  if(dealer == null) dealer = nextDealer(G);
+
+  var body = '<div class="dealer-block"><span class="dealer-label">Bu eli kim dağıttı?</span>'
+           + dealerChipsHTML(dealer) + '</div>';
+  for(var i=0;i<n;i++){
+    var dbl = isEdit && isDbl(G, editIdx, i);
+    var v = isEdit ? (dbl ? vals[i] / 2 : vals[i]) : null;       /* çift ellerde girilen taban puan gösterilir */
+    body += '<div class="entry" data-dbl="' + (dbl ? 1 : 0) + '" style="--suit:var(--suit-' + i + ')">'
+          +   '<div class="entry-top">'
+          +     '<span class="dot"></span>'
+          +     '<span class="entry-name">' + esc(entName(G,i)) + '</span>'
+          +     '<div class="field">'
+          +       '<button class="mini" data-act="sign" aria-label="Artı eksi">&plusmn;</button>'
+          +       '<input class="ein" type="text" inputmode="numeric" pattern="-?[0-9]*" placeholder="0" value="' + (v === null || v === undefined ? "" : v) + '" aria-label="' + esc(entName(G,i)) + ' skoru">'
+          +       '<button class="mini" data-act="clear" aria-label="Temizle">&times;</button>'
+          +     '</div>'
+          +   '</div>'
+          +   '<div class="chips five">'
+          +     QUICK.map(function(q){
+                  return '<button class="chip' + (v === q ? " on" : "") + '" data-q="' + q + '">' + fmt(q) + '</button>';
+                }).join("")
+          +     '<button class="chip dbl' + (dbl ? " on" : "") + '" aria-pressed="' + dbl + '" aria-label="Çift: puanı iki katına çıkar">Çift</button>'
+          +   '</div>'
+          +   '<p class="dbl-note"' + (dbl ? '' : ' hidden') + '>Çift · yazılacak puan <b>–</b></p>'
+          + '</div>';
+  }
+
+  var inner = '<div class="sheet-head"><h3>' + no + '. El' + (isEdit ? " · düzelt" : "") + '</h3>'
+            +   '<span class="sub">' + n + ' skorun tamamı gerekli</span></div>'
+            + '<div class="sheet-body">' + body
+            +   '<div class="sheet-note"><span>El toplamı</span><b id="hsum">–</b></div></div>'
+            + '<div class="sheet-foot">'
+            +   '<p class="err" id="err" hidden>Kaydetmek için ' + (G.mode === "team" ? "iki eşin de" : "dört oyuncunun da") + ' skorunu girin.</p>'
+            +   '<button class="btn-primary tile" id="saveHand">' + (isEdit ? "Değişikliği Kaydet" : "Eli Kaydet") + '</button>'
+            +   (isEdit ? '<button class="sbtn danger" id="delHand">Bu Eli Sil</button>' : "")
+            + '</div>';
+
+  openSheet(inner, function(sheet){
+    var ins = sheet.querySelectorAll(".ein");
+    var err = sheet.querySelector("#err");
+    var hsum = sheet.querySelector("#hsum");
+    var pickedDealer = dealer;
+
+    function entryOf(i){ return ins[i].parentNode.parentNode.parentNode; }
+    function dblOf(i){ return entryOf(i).getAttribute("data-dbl") === "1"; }
+    function effVal(i){                               /* çift seçiliyse yazılan puanın 2 katı */
+      var p = parseVal(ins[i].value);
+      return p === null ? null : (dblOf(i) ? p * 2 : p);
+    }
+
+    function refresh(){
+      var t = 0, ok = true;
+      for(var i=0;i<ins.length;i++){
+        var p = parseVal(ins[i].value), ev = effVal(i);
+        if(ev === null) ok = false; else t += ev;
+        var entry = entryOf(i), on = dblOf(i);
+        var chips = entry.querySelectorAll(".chip[data-q]");
+        for(var c=0;c<chips.length;c++)
+          chips[c].classList.toggle("on", p !== null && p === Number(chips[c].getAttribute("data-q")));
+        var db = entry.querySelector(".chip.dbl");
+        db.classList.toggle("on", on); db.setAttribute("aria-pressed", String(on));
+        var note = entry.querySelector(".dbl-note");
+        note.hidden = !on;
+        note.querySelector("b").textContent = ev === null ? "–" : fmt(ev);
+      }
+      hsum.textContent = ok ? fmt(t) : "–";
+    }
+
+    sheet.addEventListener("click", function(e){
+      var dbx = e.target.closest(".chip.dbl");
+      if(dbx){
+        var en = dbx.parentNode.parentNode;
+        en.setAttribute("data-dbl", en.getAttribute("data-dbl") === "1" ? "0" : "1");
+        refresh(); return;
+      }
+      var dc = e.target.closest(".dchip");
+      if(dc){
+        pickedDealer = Number(dc.getAttribute("data-d"));
+        var all = sheet.querySelectorAll(".dchip");
+        for(var j=0;j<all.length;j++)
+          all[j].classList.toggle("on", Number(all[j].getAttribute("data-d")) === pickedDealer);
+        return;
+      }
+      var chip = e.target.closest(".chip");
+      if(chip){
+        var inp = chip.parentNode.parentNode.querySelector(".ein");
+        inp.value = chip.getAttribute("data-q");
+        chip.parentNode.parentNode.classList.remove("invalid");
+        err.hidden = true; refresh(); return;
+      }
+      var mini = e.target.closest(".mini");
+      if(mini){
+        var f = mini.parentNode.querySelector(".ein");
+        if(mini.getAttribute("data-act") === "clear"){ f.value = ""; }
+        else { var p = parseVal(f.value); f.value = (p === null) ? "-" : String(-p); }
+        err.hidden = true; refresh(); return;
+      }
+    });
+
+    sheet.addEventListener("input", function(e){
+      if(!e.target.classList.contains("ein")) return;
+      sanitize(e.target);
+      e.target.parentNode.parentNode.parentNode.classList.remove("invalid");
+      err.hidden = true; refresh();
+    });
+
+    sheet.querySelector("#saveHand").addEventListener("click", function(){
+      var out = [], flags = [], anyDbl = false, bad = false;
+      for(var i=0;i<ins.length;i++){
+        var p = effVal(i);
+        if(p === null){ entryOf(i).classList.add("invalid"); bad = true; }
+        out.push(p);
+        flags.push(dblOf(i)); if(dblOf(i)) anyDbl = true;
+      }
+      var dflags = anyDbl ? flags : null;
+      if(bad){
+        err.hidden = false;
+        var first = sheet.querySelector(".entry.invalid .ein");
+        if(first) first.focus();
+        return;
+      }
+      if(isEdit){
+        G.hands[editIdx] = out;
+        G.dbl[editIdx] = dflags;
+        G.dealers[editIdx] = pickedDealer;
+        recascade(G, editIdx);                       /* sonraki ellerin dağıtanı kayar */
+        if(editIdx === 0) G.firstDealer = pickedDealer;
+      } else {
+        G.hands.push(out);
+        G.dbl.push(dflags);
+        G.dealers.push(pickedDealer);
+        if(G.hands.length === 1) G.firstDealer = pickedDealer;
+      }
+      saveGame(); closeSheet(); render();
+    });
+
+    var del = sheet.querySelector("#delHand");
+    if(del) del.addEventListener("click", function(){
+      var snap = snapshot();
+      G.hands.splice(editIdx, 1);
+      G.dealers.splice(editIdx, 1);
+      G.dbl.splice(editIdx, 1);
+      for(var i=0;i<G.extras.length;i++)               /* rekor/ceza el konumları kaysın */
+        if(G.extras[i].h != null && G.extras[i].h > editIdx) G.extras[i].h--;
+      saveGame(); closeSheet(); render();
+      toast(no + ". el silindi", snap);
+    });
+
+    refresh();
+  });
+}
+
+/* ---------- rekor / ceza ---------- */
+function pickerHTML(){
+  var n = nEnt(G);
+  var h = '<div class="picker' + (n === 2 ? " one" : "") + '">';
+  for(var i=0;i<n;i++){
+    h += '<button class="pick" data-p="' + i + '" style="--suit:var(--suit-' + i + ')">'
+       +   '<span class="dot"></span><span class="t">' + esc(entName(G,i)) + '</span></button>';
+  }
+  return h + '</div>';
+}
+
+function openExtraSheet(type){
+  var isRekor = (type === "rekor");
+  var who = G.mode === "team" ? "eşi" : "oyuncuyu";
+  var sel = null;
+
+  var inner = '<div class="sheet-head"><h3>' + (isRekor ? "Rekor" : "Ceza") + ' Ekle</h3>'
+            +   '<span class="sub">genel toplama işlenir</span></div>'
+            + '<div class="sheet-body">'
+            +   '<p class="desc">' + (isRekor
+                  ? "Rekoru yapan " + who + " seçin, <b>−101</b> yazılır. El skorlarına değil, doğrudan genel toplama eklenir."
+                  : "Cezayı alan " + who + " seçip puanı girin. El skorlarına değil, doğrudan genel toplama eklenir.") + '</p>'
+            +   pickerHTML()
+            +   (isRekor ? '' :
+                  '<div class="entry"><div class="entry-top">'
+                +   '<span class="entry-name">Ceza puanı</span>'
+                +   '<div class="field">'
+                +     '<button class="mini" data-act="sign" aria-label="Artı eksi">&plusmn;</button>'
+                +     '<input class="ein" type="text" inputmode="numeric" pattern="-?[0-9]*" placeholder="0" aria-label="Ceza puanı">'
+                +     '<button class="mini" data-act="clear" aria-label="Temizle">&times;</button>'
+                +   '</div></div></div>')
+            + '</div>'
+            + '<div class="sheet-foot">'
+            +   '<p class="err" id="err" hidden>' + (isRekor ? "Rekoru yapan " + who + " seçin." : "Önce " + who + " seçip ceza puanını girin.") + '</p>'
+            +   '<button class="btn-primary tile" id="addExtra">Ekle</button>'
+            + '</div>';
+
+  openSheet(inner, function(sheet){
+    var err = sheet.querySelector("#err");
+    var inp = sheet.querySelector(".ein");
+
+    sheet.addEventListener("click", function(e){
+      var p = e.target.closest(".pick");
+      if(p){
+        sel = Number(p.getAttribute("data-p"));
+        var all = sheet.querySelectorAll(".pick");
+        for(var i=0;i<all.length;i++)
+          all[i].classList.toggle("on", Number(all[i].getAttribute("data-p")) === sel);
+        err.hidden = true; return;
+      }
+      var mini = e.target.closest(".mini");
+      if(mini && inp){
+        if(mini.getAttribute("data-act") === "clear") inp.value = "";
+        else { var v = parseVal(inp.value); inp.value = (v === null) ? "-" : String(-v); }
+        err.hidden = true;
+      }
+    });
+
+    if(inp) inp.addEventListener("input", function(){ sanitize(inp); err.hidden = true; });
+
+    sheet.querySelector("#addExtra").addEventListener("click", function(){
+      var val = isRekor ? -101 : parseVal(inp.value);
+      if(sel === null || val === null || (!isRekor && val === 0)){ err.hidden = false; return; }
+      G.extras.push({ id: G.seq++, p: sel, t: type, v: val, h: G.hands.length });
+      saveGame(); closeSheet(); render();
+    });
+  });
+}
+
+/* ---------- paylaşma ---------- */
+function shareText(g){
+  var n = nEnt(g), d = dealersOf(g), L = [];
+  L.push("🀄 Okey 101 Yaz Boz");
+  L.push(dateLabel(g.endedAt || Date.now()) + " · " + modeLabel(g) + " · " + g.hands.length + " el");
+  L.push("");
+
+  var order = [];
+  for(var k=0;k<n;k++) order.push(k);
+  order.sort(function(a,b){ return tot(g,a) - tot(g,b); });
+  for(var i=0;i<order.length;i++){
+    var e = order[i];
+    L.push((i === 0 ? "🏆 " : "   ") + (i+1) + ". " + entName(g,e) + " — " + plain(tot(g,e)));
+  }
+
+  var names = [];
+  for(var c=0;c<n;c++) names.push(entName(g,c));
+
+  if(g.hands.length){
+    L.push(""); L.push("El skorları (" + names.join(" / ") + ")");
+    for(var h=0;h<g.hands.length;h++){
+      var dl = d[h] == null ? "" : "  [" + pName(g, d[h]) + " dağıttı]";
+      L.push((h+1) + ". el — " + g.hands[h].map(function(v, c){ return plain(v) + (isDbl(g, h, c) ? " (çift)" : ""); }).join(" / ") + dl);
+    }
+    L.push("El toplamı — " + names.map(function(_, j){ return plain(hSum(g,j)); }).join(" / "));
+  }
+  if(g.extras.length){
+    L.push(""); L.push("Rekor ve cezalar");
+    for(var x=0;x<g.extras.length;x++){
+      var ex = g.extras[x];
+      L.push(entName(g, ex.p) + " — " + (ex.t === "rekor" ? "Rekor" : "Ceza") + " " + plain(ex.v));
+    }
+  }
+  return L.join("\n");
+}
+
+function shareGame(g){
+  var txt = shareText(g);
+  if(navigator.share){
+    try{
+      navigator.share({ text: txt }).catch(function(err){
+        if(!err || err.name !== "AbortError") copyOrShow(txt);   /* iptal edildiyse sessiz kal */
+      });
+      return;
+    }catch(e){}
+  }
+  copyOrShow(txt);
+}
+
+function copyOrShow(txt){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(
+      function(){ toast("Skor tablosu kopyalandı"); },
+      function(){ openTextSheet(txt); });
+    return;
+  }
+  openTextSheet(txt);
+}
+
+function openTextSheet(txt){
+  var inner = '<div class="sheet-head"><h3>Sonucu Paylaş</h3><span class="sub">seçip kopyalayın</span></div>'
+            + '<div class="sheet-body"><p class="desc">Metni seçip kopyalayın, sonra sohbete yapıştırın.</p>'
+            +   '<textarea class="share-box" id="shareBox" readonly spellcheck="false"></textarea></div>'
+            + '<div class="sheet-foot"><button class="btn-primary tile" id="copyBtn">Tümünü Seç</button>'
+            +   '<button class="sbtn" id="closeShare">Kapat</button></div>';
+  openSheet(inner, function(sheet){
+    var box = sheet.querySelector("#shareBox");
+    box.value = txt;
+    sheet.querySelector("#closeShare").addEventListener("click", closeSheet);
+    sheet.querySelector("#copyBtn").addEventListener("click", function(){
+      box.focus(); box.setSelectionRange(0, box.value.length);
+      try{ if(document.execCommand("copy")) toast("Kopyalandı"); }catch(e){}
+    });
+  });
+}
+
+/* ---------- menü ---------- */
+var RESET_LABEL = "Yeni Oyun · Her Şeyi Sıfırla";
+
+function openMenu(){
+  var canEnd = G.hands.length > 0 || G.extras.length > 0;
+  var inner = '<div class="sheet-head"><h3>Seçenekler</h3><span class="sub">' + modeLabel(G) + '</span></div>'
+            + '<div class="sheet-body"><div class="menu-list">'
+            +   '<button class="sbtn" data-m="live">Canlı Skor Linki</button>'
+            +   '<button class="sbtn" data-m="share">Sonucu Paylaş</button>'
+            +   '<button class="sbtn" data-m="names">Oyuncu İsimlerini Düzenle</button>'
+            +   '<button class="sbtn" data-m="undoLast"' + (G.hands.length ? "" : " disabled") + '>Son Eli Sil</button>'
+            +   '<button class="sbtn" data-m="finish"' + (canEnd ? "" : " disabled") + '>Oyunu Bitir ve Arşivle</button>'
+            +   '<button class="sbtn" data-m="archive">Geçmiş Oyunlar' + (ARCH.length ? " · " + ARCH.length : "") + '</button>'
+            +   '<button class="sbtn danger" data-m="reset">' + RESET_LABEL + '</button>'
+            + '</div></div>'
+            + '<div class="sheet-foot"><button class="sbtn" id="closeMenu">Kapat</button></div>';
+
+  openSheet(inner, function(sheet){
+    sheet.querySelector("#closeMenu").addEventListener("click", closeSheet);
+    sheet.addEventListener("click", function(e){
+      var b = e.target.closest("[data-m]");
+      if(!b || b.disabled) return;
+      var m = b.getAttribute("data-m");
+
+      if(m === "live"){ closeSheet(); openLiveSheet(); return; }
+      if(m === "share"){ closeSheet(); shareGame(G); return; }
+      if(m === "names"){ closeSheet(); openNamesSheet(); return; }
+      if(m === "archive"){ closeSheet(); VIEW = "archive"; render(); return; }
+
+      if(m === "undoLast"){
+        var snap = snapshot(), no = G.hands.length;
+        G.hands.pop(); G.dealers.pop(); G.dbl.pop();
+        for(var i=0;i<G.extras.length;i++)
+          if(G.extras[i].h != null && G.extras[i].h > no - 1) G.extras[i].h = no - 1;
+        saveGame(); closeSheet(); render();
+        toast(no + ". el silindi", snap);
+        return;
+      }
+
+      if(m === "finish"){
+        var snap2 = snapshot();
+        var done = JSON.parse(JSON.stringify({
+          mode:G.mode, players:G.players, hands:G.hands, dealers:G.dealers, dbl:G.dbl, extras:G.extras
+        }));
+        done.endedAt = Date.now();
+        ARCH.push(done); saveArch();
+        var win = leaders(done);
+        G = blankGame(G.mode, G.players.slice(), nextDealer(G));   /* rövanşta sıra devam eder */
+        VIEW = "setup"; saveGame(); closeSheet(); render();
+        toast("Arşivlendi · " + entName(done, win[0]) + " kazandı", snap2);
+        return;
+      }
+
+      if(m === "reset"){
+        if(b.getAttribute("data-armed")){
+          var snap3 = snapshot();
+          G = blankGame(G.mode, G.players.slice(), G.firstDealer);
+          VIEW = "setup"; saveGame(); closeSheet(); render();
+          toast("Oyun sıfırlandı", snap3);
+        } else {
+          b.setAttribute("data-armed", "1");
+          b.textContent = "Emin misiniz? Tekrar dokunun";
+          setTimeout(function(){
+            if(b.isConnected){ b.removeAttribute("data-armed"); b.textContent = RESET_LABEL; }
+          }, 3500);
+        }
+      }
+    });
+  });
+}
+
+function openNamesSheet(){
+  var team = G.mode === "team";
+  var body = "";
+  for(var i=0;i<4;i++){
+    var suit = team ? teamOf(i) : i;
+    body += '<label class="name-row" style="--suit:var(--suit-' + suit + ')">'
+          +   '<span class="idx">' + (i+1) + '</span>'
+          +   '<input type="text" class="nin" value="' + esc(G.players[i] || "") + '" placeholder="' + (i+1) + '. oyuncu" autocomplete="off" autocapitalize="words" spellcheck="false">'
+          +   (team ? '<span class="team-chip">' + (teamOf(i) + 1) + '. eş</span>' : "")
+          + '</label>';
+  }
+  var inner = '<div class="sheet-head"><h3>Oyuncu İsimleri</h3><span class="sub">' + modeLabel(G) + '</span></div>'
+            + '<div class="sheet-body">' + body + '</div>'
+            + '<div class="sheet-foot"><button class="btn-primary tile" id="saveNames">Kaydet</button></div>';
+
+  openSheet(inner, function(sheet){
+    sheet.querySelector("#saveNames").addEventListener("click", function(){
+      var ins = sheet.querySelectorAll(".nin");
+      for(var i=0;i<4;i++){
+        var v = ins[i].value.trim();
+        G.players[i] = v || ((i+1) + ". oyuncu");
+      }
+      saveGame(); closeSheet(); render();
+    });
+  });
+}
+
+/* ---------- canlı skor linki ---------- */
+function openLiveSheet(){
+  var ready = !!liveRef && CAN_WRITE && !!LIVE_URL;
+  var note = LIVE_KIND === "claude"
+    ? "İzleyicinin linki açabilmesi için sayfanın <b>Paylaş</b> menüsünden onu eklemeniz gerekir. Herkese açık link için uygulamanın kendi sitenizdeki sürümünü kullanın."
+    : "Link herkese açıktır; açan kişinin hesap açması gerekmez. İzleyiciler skoru yalnızca görür, değiştiremez.";
+  var inner = '<div class="sheet-head"><h3>Canlı Skor Linki</h3>'
+            +   '<span class="live-chip' + (ready && liveState !== "error" ? "" : " off") + '">'
+            +     (ready ? (liveState === "error" ? "Hata" : "Yayında") : "Kapalı") + '</span></div>'
+            + '<div class="sheet-body">'
+            +   '<p class="desc">' + (ready
+                  ? "Bu linke giren izleyiciler skor tablosunu canlı görür. El, rekor veya ceza girdiğiniz anda onların ekranı da güncellenir."
+                  : (LIVE_KIND ? "Canlı yayına bağlanılamadı. İnternet bağlantınızı kontrol edip sayfayı yenileyin."
+                               : "Canlı yayın ayarlanmamış (Firebase bilgileri eksik). Skorlar yalnızca bu cihazda tutuluyor.")) + '</p>'
+            +   (ready ? '<span class="link-box" id="liveLink">' + esc(LIVE_URL) + '</span>'
+                       + '<p class="desc">' + note + '</p>' : '')
+            + '</div>'
+            + '<div class="sheet-foot">' + (ready ? '<button class="btn-primary tile" id="copyLive">Linki Kopyala</button>' : '')
+            +   '<button class="sbtn" id="closeLive">Kapat</button></div>';
+  openSheet(inner, function(sheet){
+    sheet.querySelector("#closeLive").addEventListener("click", closeSheet);
+    var copyBtn = sheet.querySelector("#copyLive");
+    if(copyBtn) copyBtn.addEventListener("click", function(){
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(LIVE_URL).then(function(){ toast("Link kopyalandı"); }, selectLink);
+      } else selectLink();
+    });
+    function selectLink(){
+      var r = document.createRange(); r.selectNodeContents(sheet.querySelector("#liveLink"));
+      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      toast("Linki seçip kopyalayın");
+    }
+  });
+}
+
+/* ---------- zar ---------- */
+var PIPS = { 1:[4], 2:[0,8], 3:[0,4,8], 4:[0,2,6,8], 5:[0,2,4,6,8], 6:[0,2,3,5,6,8] };
+function dieHTML(v, small){
+  var on = PIPS[v] || [], h = '<div class="die tile' + (small ? " small" : "") + '" role="img" aria-label="' + v + '">';
+  for(var i=0;i<9;i++) h += '<i' + (on.indexOf(i) >= 0 ? ' class="on"' : '') + '></i>';
+  return h + '</div>';
+}
+function rand6(){
+  try{ var a = new Uint32Array(1); crypto.getRandomValues(a); return (a[0] % 6) + 1; }
+  catch(e){ return Math.floor(Math.random() * 6) + 1; }
+}
+
+function openDiceSheet(){
+  var inner = '<div class="sheet-head"><h3>Zar At</h3><span class="sub">iki zar</span></div>'
+            + '<div class="sheet-body">'
+            +   '<div class="dice-row" id="diceRow" aria-live="polite">' + dieHTML(1) + dieHTML(1) + '</div>'
+            +   '<div class="dice-sum" id="diceSum">&nbsp;<em></em></div>'
+            + '</div>'
+            + '<div class="sheet-foot"><button class="btn-primary tile" id="rollAgain">Tekrar At</button>'
+            +   '<button class="sbtn" id="closeDice">Kapat</button></div>';
+  openSheet(inner, function(sheet){
+    var row = sheet.querySelector("#diceRow"), sum = sheet.querySelector("#diceSum");
+    var again = sheet.querySelector("#rollAgain"), timer = null;
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function roll(){
+      clearInterval(timer);
+      var a = rand6(), b = rand6(), ticks = reduce ? 0 : 9;
+      again.disabled = true;
+      sum.innerHTML = '&nbsp;<em></em>';
+      function finish(){
+        row.innerHTML = dieHTML(a) + dieHTML(b);
+        sum.innerHTML = '<em>' + (a === b ? "Çift geldi" : "") + '</em>';
+        again.disabled = false;
+        if(G.started){ G.roll = { d:[a, b], at: Date.now() }; saveGame(); }   /* izleyiciler de görsün */
+      }
+      if(!ticks){ finish(); return; }
+      timer = setInterval(function(){
+        if(!sheet.isConnected){ clearInterval(timer); return; }
+        if(--ticks <= 0){ clearInterval(timer); finish(); return; }
+        row.innerHTML = dieHTML(rand6()).replace('class="die', 'class="die rolling')
+                      + dieHTML(rand6()).replace('class="die', 'class="die rolling');
+      }, 70);
+    }
+    again.addEventListener("click", roll);
+    sheet.querySelector("#closeDice").addEventListener("click", closeSheet);
+    roll();
+  });
+}
+
+/* ---------- arşiv detayı ---------- */
+function openGameSheet(idx){
+  var g = ARCH[idx], win = leaders(g);
+  var inner = '<div class="sheet-head"><h3>' + esc(dateLabel(g.endedAt)) + '</h3>'
+            +   '<span class="sub">' + modeLabel(g) + ' · ' + g.hands.length + ' el</span></div>'
+            + '<div class="sheet-body">'
+            +   '<p class="desc">🏆 <b>' + esc(entName(g, win[0])) + '</b> kazandı · ' + fmt(tot(g, win[0])) + '</p>'
+            +   standingsHTML(g) + tableCardHTML(g, false)
+            +   ledgerHTML(g, false)
+            + '</div>'
+            + '<div class="sheet-foot"><button class="btn-primary tile" id="shareOld">Sonucu Paylaş</button>'
+            +   '<button class="sbtn" id="closeGame">Kapat</button></div>';
+  openSheet(inner, function(sheet){
+    sheet.querySelector("#closeGame").addEventListener("click", closeSheet);
+    sheet.querySelector("#shareOld").addEventListener("click", function(){ closeSheet(); shareGame(g); });
+  });
+}
+
+/* ---------- geri al bildirimi ---------- */
+var toastRoot = document.getElementById("toastRoot");
+var toastTimer = null;
+function toast(msg, snap){
+  clearTimeout(toastTimer);
+  toastRoot.innerHTML = '<div class="toast"><span>' + esc(msg) + '</span>'
+    + (snap ? '<button type="button">Geri al</button>' : "") + '</div>';
+  var btn = toastRoot.querySelector("button");
+  if(btn) btn.addEventListener("click", function(){
+    clearTimeout(toastTimer); toastRoot.innerHTML = ""; restore(snap);
+  });
+  toastTimer = setTimeout(function(){ toastRoot.innerHTML = ""; }, 5500);
+}
+
+/* ===================== bağlantılar ===================== */
+document.getElementById("newHandBtn").addEventListener("click", function(){ openHandSheet(null); });
+document.getElementById("diceBtn").addEventListener("click", openDiceSheet);
+
+main.addEventListener("click", function(e){
+  var add = e.target.closest("[data-add]");
+  if(add){ openExtraSheet(add.getAttribute("data-add")); return; }
+
+  var del = e.target.closest("[data-del]");
+  if(del){
+    var id = Number(del.getAttribute("data-del")), snap = snapshot();
+    G.extras = G.extras.filter(function(x){ return x.id !== id; });
+    saveGame(); render(); toast("Kayıt silindi", snap);
+    return;
+  }
+
+  var row = e.target.closest("[data-hand]");
+  if(row){ openHandSheet(Number(row.getAttribute("data-hand"))); return; }
+
+  var gm = e.target.closest("[data-game]");
+  if(gm){ openGameSheet(Number(gm.getAttribute("data-game"))); return; }
+
+  var dg = e.target.closest("[data-delgame]");
+  if(dg){
+    var gi = Number(dg.getAttribute("data-delgame")), snap2 = snapshot();
+    ARCH.splice(gi, 1); saveArch(); render();
+    toast("Oyun arşivden silindi", snap2);
+  }
+});
+
+/* kurulumda isim yazılırken dağıtan çipleri adı takip etsin */
+main.addEventListener("input", function(e){
+  if(VIEW !== "setup" || !e.target.id || e.target.id.indexOf("nm") !== 0) return;
+  var i = Number(e.target.id.slice(2));
+  G.players[i] = e.target.value;
+  var chip = main.querySelector('.dchip[data-d="' + i + '"]');
+  if(chip) chip.textContent = pName(G, i);
+});
+
+main.addEventListener("keydown", function(e){
+  if(e.key !== "Enter" && e.key !== " ") return;
+  var row = e.target.closest("[data-hand]");
+  if(row){ e.preventDefault(); openHandSheet(Number(row.getAttribute("data-hand"))); }
+});
+
+/* İzleyici skor tutma ekranını hiç görmesin: claude.ai'de rol belli olana dek beklenir,
+   kendi sitemizde ?izle= linkiyle gelen doğrudan izleme ekranını açar. */
+if(IN_CLAUDE){
+  main.innerHTML = '<div class="empty">Yükleniyor…</div>';
+  initLive().then(render, render);
+} else {
+  if(WATCH_ID && LIVE_KIND) VIEW = "watch";
+  render();
+  initLive().then(function(){ if(VIEW === "watch") render(); });
+}
+})();
+</script>
