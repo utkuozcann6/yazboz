@@ -433,6 +433,18 @@ tfoot tr.grand td.el{color:var(--muted); font-weight:700; font-size:11px}
 .toast button{background:none; border:none; color:inherit; font-weight:700; font-size:13.5px; text-decoration:underline; padding:2px 4px; white-space:nowrap}
 @media (prefers-reduced-motion: no-preference){.toast{animation:rise .18s ease}}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.01ms !important; transition-duration:.01ms !important}}
+/* ---------- masa / eşli ---------- */
+.brand-col{display:flex; flex-direction:column; min-width:0}
+.brand-col .brand-text{overflow:hidden; text-overflow:ellipsis}
+.brand-col .brand-sub{overflow:hidden; text-overflow:ellipsis}
+.chev{display:grid; place-items:center; padding:0 14px 0 4px; color:var(--faint); font-size:22px; line-height:1}
+.live-tag{color:var(--bad); font-weight:700}
+.cur-body{padding:0 12px 12px; display:flex; flex-direction:column; gap:12px}
+.team-head{display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:8px 4px 0;
+  font-size:12.5px; font-weight:700; color:var(--suit)}
+.team-head span:last-child{font-weight:500; color:var(--faint); font-size:12px; white-space:nowrap}
+.team-head b{font-family:"DM Mono",ui-monospace,monospace; font-weight:500; font-size:15px; color:var(--text); padding-left:4px}
+td .split{display:block; margin-top:1px; font-family:"Instrument Sans",sans-serif; font-size:10.5px; color:var(--faint); white-space:nowrap}
 [hidden]{display:none !important}
 </style>
 
@@ -456,52 +468,106 @@ tfoot tr.grand td.el{color:var(--muted); font-weight:700; font-size:11px}
 "use strict";
 
 /* ===================== depolama ===================== */
+/* Her buluşma bir "masa"dır: adı, açıldığı gün, biten oyunları ve varsa süren oyunu.
+   Masalar hiç silinmez. Eski tek oyunluk kayıtlar ilk açılışta "Önceki oyunlar" masasına taşınır. */
 var K_GAME = "okey101.game.v2", K_ARCH = "okey101.arch.v1", K_OLD = "okey101.v1";
+var K_TABLES = "okey101.tables.v1", K_ACTIVE = "okey101.active.v1", K_LIVEID = "okey101.liveid";
 var mem = {};
 function get(k){
   try{ var r = localStorage.getItem(k); return r ? JSON.parse(r) : (mem[k] || null); }
   catch(e){ return mem[k] || null; }
 }
 function put(k, v){ mem[k] = v; try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
-function drop(k){ delete mem[k]; try{ localStorage.removeItem(k); }catch(e){} }
 
 function blankGame(mode, players, firstDealer){
   return { mode: mode || "solo", players: players || ["","","",""],
-           hands: [], dealers: [], dbl: [], extras: [], seq: 1, started: false,
+           hands: [], dealers: [], dbl: [], pl: [], extras: [], seq: 1, started: false,
            firstDealer: firstDealer == null ? 0 : firstDealer, roll: null };
 }
-
-var G = get(K_GAME);
-if(!G || !G.players || G.players.length !== 4){
-  var old = get(K_OLD);                                   /* eski tek modlu kayıt taşınır */
-  if(old && old.players && old.players.length === 4){
-    G = { mode:"solo", players:old.players.map(String), hands:old.hands || [],
-          dealers:[], extras:old.extras || [], seq:old.seq || 1, started:!!old.started, firstDealer:0 };
-    put(K_GAME, G); drop(K_OLD);
-  } else G = blankGame();
+/* Eksik alanları tamamlar; eski kayıtlarla ve izleyiciye gelen verilerle de çalışır. */
+function normGame(g){
+  if(!g || typeof g !== "object") return null;
+  if(g.mode !== "team" && g.mode !== "solo") g.mode = "solo";
+  if(!Array.isArray(g.players) || g.players.length !== 4) g.players = ["","","",""];
+  ["hands", "dealers", "dbl", "pl", "extras"].forEach(function(k){ if(!Array.isArray(g[k])) g[k] = []; });
+  while(g.dealers.length < g.hands.length) g.dealers.push(null);   /* eski eller: dağıtan bilinmiyor */
+  while(g.dbl.length < g.hands.length) g.dbl.push(null);           /* eski eller: çift değil */
+  while(g.pl.length < g.hands.length) g.pl.push(null);             /* eski eşli eller: yalnız eş toplamı */
+  if(g.firstDealer == null) g.firstDealer = 0;
+  if(!g.seq) g.seq = 1;
+  return g;
 }
-if(G.mode !== "team" && G.mode !== "solo") G.mode = "solo";
-if(!Array.isArray(G.dealers)) G.dealers = [];
-if(G.firstDealer == null) G.firstDealer = 0;
-while(G.dealers.length < G.hands.length) G.dealers.push(null);   /* eski eller: dağıtan bilinmiyor */
-if(!Array.isArray(G.dbl)) G.dbl = [];
-while(G.dbl.length < G.hands.length) G.dbl.push(null);           /* eski eller: çift değil */
+function normTable(t){
+  t.name = String(t.name || "Masa");
+  t.games = (Array.isArray(t.games) ? t.games : []).map(normGame).filter(Boolean);
+  t.cur = t.cur ? normGame(t.cur) : null;
+  if(!t.createdAt) t.createdAt = Date.now();
+  return t;
+}
 
-var ARCH = get(K_ARCH) || [];
-var VIEW = G.started ? "game" : "setup";
+var TABLES = get(K_TABLES);
+if(!Array.isArray(TABLES)){
+  TABLES = [];
+  var oldG = get(K_GAME), oldA = get(K_ARCH) || [];
+  if(!oldG){
+    var v1 = get(K_OLD);
+    if(v1 && v1.players && v1.players.length === 4)
+      oldG = { mode:"solo", players:v1.players.map(String), hands:v1.hands || [], extras:v1.extras || [],
+               seq:v1.seq || 1, started:!!v1.started };
+  }
+  var hasCur = !!(oldG && (oldG.started || (oldG.hands && oldG.hands.length)));
+  if(hasCur || oldA.length){
+    var first = oldA.reduce(function(m, g){ return g.endedAt && g.endedAt < m ? g.endedAt : m; }, Date.now());
+    TABLES.push({ id: get(K_LIVEID) || randomId(), name: "Önceki oyunlar", createdAt: first,
+                  games: oldA, cur: hasCur ? oldG : null });
+    put(K_ACTIVE, TABLES[0].id);
+  }
+  put(K_TABLES, TABLES);            /* eski anahtarlar yedek olarak yerinde bırakılır */
+}
+TABLES = TABLES.filter(function(t){ return t && typeof t === "object" && t.id; }).map(normTable);
 
-function saveGame(){ put(K_GAME, G); scheduleLive(); }
-function saveArch(){ put(K_ARCH, ARCH); }
-function snapshot(){ return JSON.parse(JSON.stringify({ g:G, a:ARCH, v:VIEW })); }
-function restore(s){ G = s.g; ARCH = s.a; VIEW = s.v; saveGame(); saveArch(); render(); }
+function findTable(id){ for(var i=0;i<TABLES.length;i++) if(TABLES[i].id === id) return TABLES[i]; return null; }
+var T = findTable(get(K_ACTIVE));          /* açık masa */
+var G = T ? T.cur : null;                  /* o masada süren oyun */
+var VIEW = T && G && G.started ? "game" : "home";
+
+function saveTables(){ put(K_TABLES, TABLES); }
+function saveGame(){ if(T) T.cur = G; saveTables(); scheduleLive(); }
+function openTable(t){
+  T = t; G = t.cur; put(K_ACTIVE, t.id);
+  bindLiveTable(); scheduleLive();
+}
+function newTable(name){
+  var t = normTable({ id: randomId(), name: name, createdAt: Date.now(), games: [], cur: null });
+  TABLES.push(t); saveTables();
+  return t;
+}
+function allGames(){
+  var out = [];
+  TABLES.forEach(function(t){ out = out.concat(t.games); });
+  return out;
+}
+/* Yeni oyun için isim/mod önerisi: bu masanın (yoksa en son masanın) son oyunu. */
+function lastGameOf(t){ return t.cur && t.cur.players.some(Boolean) ? t.cur : (t.games.length ? t.games[t.games.length - 1] : null); }
+function latestGame(){
+  var list = TABLES.slice().sort(function(a, b){ return b.createdAt - a.createdAt; });
+  for(var i=0;i<list.length;i++){ var g = lastGameOf(list[i]); if(g) return g; }
+  return null;
+}
+function snapshot(){ return JSON.parse(JSON.stringify({ t:TABLES, a:T ? T.id : null, v:VIEW })); }
+function restore(s){
+  TABLES = s.t.map(normTable); T = findTable(s.a); G = T ? T.cur : null; VIEW = s.v;
+  saveGame(); render();
+}
 
 /* ===================== canlı skor ===================== */
-/* Skoru tutan her değişikliği tek bir canlı kayda yazar; izleyiciler o kayda abone olup
-   skoru anında görür. İki arka uç var:
+/* Skoru tutan cihaz açık masanın tamamını (süren oyun + biten oyunlar) tek bir canlı kayda
+   yazar; izleyiciler o kayda abone olup skoru anında görür. Kayıt aynı zamanda masanın
+   yedeğidir. İki arka uç var:
    - claude.ai'de açıldığında sayfanın kendi veritabanı (izleyici Claude hesabıyla girer),
-   - kendi sitenizde açıldığında Firebase (link herkese açık: ?izle=<oyun kodu>). */
+   - kendi sitenizde açıldığında Firebase (link herkese açık: ?izle=<masa kodu>). */
 
-/* Firebase konsolu > Proje ayarları > "Web uygulaması" config nesnesini buraya yapıştırın. */
+/* Firebase konsolu > Proje ayarları > "Web uygulaması" config nesnesi. */
 var FIREBASE_CONFIG = {
   apiKey: "AIzaSyDFHObTOeSqQF3UF3eODP_KvH9SL5z_Iow",
   authDomain: "yazboz-42be7.firebaseapp.com",
@@ -520,30 +586,34 @@ var WATCH_ID = (function(){
 })();
 var LIVE_URL = IN_CLAUDE ? "https://claude.ai/artifact/Dzi7Sn17d2tT1zKWq9ivP9" : null;
 var LIVE_KIND = IN_CLAUDE ? "claude" : (FIREBASE_CONFIG ? "firebase" : null);
-var liveRef = null, CAN_WRITE = false;
-var LIVE = null, liveLoaded = false;   /* izleyicide: son gelen oyun durumu */
+var liveRef = null, CAN_WRITE = false, fbRefFor = null;
+var LIVE = null, liveLoaded = false;   /* izleyicide: son gelen masa durumu */
 var liveState = "off";                 /* off | on | error */
-var liveTimer = null, liveBusy = false, livePending = false;
+var liveTimer = null, liveBusy = false, livePending = false, liveRetries = 0;
 
-function livePayload(){
-  return { game: JSON.parse(JSON.stringify({
-             mode:G.mode, players:G.players, hands:G.hands, dealers:G.dealers, dbl:G.dbl,
-             extras:G.extras, started:G.started, firstDealer:G.firstDealer, roll:G.roll || null })),
-           updatedAt: Date.now() };
+function tablePayload(t){
+  return JSON.parse(JSON.stringify({ id:t.id, name:t.name, createdAt:t.createdAt, games:t.games, cur:t.cur }));
 }
+function livePayload(){ return { table: tablePayload(T), updatedAt: Date.now() }; }
 function scheduleLive(){
-  if(!liveRef || !CAN_WRITE) return;
+  if(!liveRef || !CAN_WRITE || !T) return;
   clearTimeout(liveTimer);
   liveTimer = setTimeout(pushLive, 350);
 }
 function pushLive(){
+  if(!T) return;
   if(liveBusy){ livePending = true; return; }
   liveBusy = true;
   liveRef.set(livePayload()).then(function(){
     liveState = "on";
   }, function(e){
     liveState = "error";
-    if(e && e.code === "invalid_argument") CAN_WRITE = false;
+    if(e && e.code === "invalid_argument"){
+      /* Firebase: kod başka bir cihaza ait (ör. kopyalanmış masa) — masaya yeni kod verilir */
+      if(LIVE_KIND === "firebase" && liveRetries < 2){
+        liveRetries++; T.id = randomId(); put(K_ACTIVE, T.id); saveTables(); bindLiveTable();
+      } else CAN_WRITE = false;
+    }
   }).then(function(){
     liveBusy = false;
     if(livePending){ livePending = false; pushLive(); }
@@ -566,6 +636,12 @@ function randomId(){
   catch(e){ for(var j=0;j<8;j++) out += abc[Math.floor(Math.random() * abc.length)]; }
   return out;
 }
+/* Gelen veri masa mı, eski sürümün tek oyunu mu? İkisini de masaya çevirir. */
+function toTable(x){
+  if(!x) return null;
+  if(Array.isArray(x.games)) return normTable(x);
+  return normTable({ id: "", name: "", games: [], cur: x });
+}
 
 /* ---- claude.ai veritabanı ---- */
 function initClaude(){
@@ -579,7 +655,10 @@ function initClaude(){
     liveRef = {
       set: function(p){ return doc.set(p); },
       watch: function(next, err){
-        doc.onSnapshot(function(snap){ next(snap.exists ? snap.data() : null); }, err);
+        doc.onSnapshot(function(snap){
+          var d = snap.exists ? snap.data() : null;
+          next(d ? { table: d.table || d.game, updatedAt: d.updatedAt } : null);
+        }, err);
       }
     };
     if(!user) return "scorer";
@@ -588,8 +667,7 @@ function initClaude(){
 }
 
 /* ---- Firebase Realtime Database ---- */
-/* Oyun durumu tek bir JSON metni olarak saklanır (Firebase boş dizileri ve null'ları siler). */
-var K_LIVEID = "okey101.liveid";
+/* Masa tek bir JSON metni olarak saklanır (Firebase boş dizileri ve null'ları siler). */
 function initFirebase(){
   var base = "https://www.gstatic.com/firebasejs/" + FB_VER + "/";
   return loadScript(base + "firebase-app-compat.js")
@@ -599,34 +677,34 @@ function initFirebase(){
     .then(function(){
       var app = firebase.apps.length ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
       var rtdb = app.database();
-      function refFor(id){
+      fbRefFor = function(id){
         var r = rtdb.ref("games/" + id);
         return {
           set: function(p){
             var u = app.auth().currentUser;
-            return r.set({ owner: u ? u.uid : "", data: JSON.stringify(p.game), updatedAt: p.updatedAt })
+            return r.set({ owner: u ? u.uid : "", data: JSON.stringify(p.table), updatedAt: p.updatedAt })
               .catch(function(e){ throw { code: /permission/i.test(String(e && (e.code || e.message))) ? "invalid_argument" : "unavailable" }; });
           },
           watch: function(next, err){
             r.on("value", function(snap){
-              var v = snap.val(), game = null;
-              try{ game = v && v.data ? JSON.parse(v.data) : null; }catch(e){}
-              next(game ? { game: game, updatedAt: v.updatedAt } : null);
+              var v = snap.val(), data = null;
+              try{ data = v && v.data ? JSON.parse(v.data) : null; }catch(e){}
+              next(data ? { table: data, updatedAt: v.updatedAt } : null);
             }, err);
           }
         };
-      }
-      if(WATCH_ID){ liveRef = refFor(WATCH_ID); return "watcher"; }
-
-      return app.auth().signInAnonymously().then(function(){
-        var id = get(K_LIVEID);
-        if(!id){ id = randomId(); put(K_LIVEID, id); }
-        liveRef = refFor(id);
-        LIVE_URL = location.origin + location.pathname + "?izle=" + id;
-        return "scorer";
-      });
+      };
+      if(WATCH_ID){ liveRef = fbRefFor(WATCH_ID); return "watcher"; }
+      return app.auth().signInAnonymously().then(function(){ return "scorer"; });
     })
     .catch(function(){ liveState = "error"; return null; });
+}
+/* Firebase'de her masanın kendi kaydı ve linki var; masa değişince bağlantı da değişir. */
+function bindLiveTable(){
+  if(LIVE_KIND !== "firebase" || !fbRefFor || !T || WATCH_ID) return;
+  liveRef = fbRefFor(T.id);
+  LIVE_URL = location.origin + location.pathname + "?izle=" + T.id;
+  scheduleLive();
 }
 
 function initLive(){
@@ -634,20 +712,19 @@ function initLive(){
         : LIVE_KIND === "firebase" ? initFirebase()
         : Promise.resolve(null);
   return p.then(function(role){
-    if(!liveRef || !role) return;
-    if(role === "watcher"){ startWatching(); VIEW = "watch"; }
-    else {
-      CAN_WRITE = true; liveState = "on";
-      if(LIVE_KIND === "firebase") scheduleLive();   /* kendi sitemizde: açılışta güncel durumu yay */
-    }
+    if(!role) return;
+    if(role === "watcher"){ if(liveRef){ startWatching(); VIEW = "watch"; } return; }
+    CAN_WRITE = true; liveState = "on";
+    if(LIVE_KIND === "firebase") bindLiveTable();   /* kendi sitemizde: açılışta güncel durumu yay */
   });
 }
 var lastSeenHands = -1, freshRow = -1;
 function startWatching(){
   liveRef.watch(function(d){
-    LIVE = d && d.game ? { g: JSON.parse(JSON.stringify(d.game)), at: d.updatedAt } : null;
+    var t = d && d.table ? toTable(JSON.parse(JSON.stringify(d.table))) : null;
+    LIVE = t ? { t: t, at: d.updatedAt } : null;
     liveLoaded = true; liveState = "on";
-    var n = LIVE ? (LIVE.g.hands || []).length : 0;
+    var n = t && t.cur ? t.cur.hands.length : 0;
     freshRow = (lastSeenHands >= 0 && n > lastSeenHands) ? n - 1 : -1;
     lastSeenHands = n;
     if(VIEW === "watch") render();
@@ -706,38 +783,154 @@ var nextDealerEl = document.getElementById("nextDealer");
 
 function render(){
   if(VIEW === "watch"){ renderWatch(); return; }
+  if(VIEW === "stats"){ renderStats(); return; }
+  if(!T) VIEW = "home";
+  if((VIEW === "game" || VIEW === "setup") && !G) VIEW = "table";
+  if(VIEW === "game" && !G.started) VIEW = "setup";
+  if(VIEW === "home"){ renderHome(); return; }
+  if(VIEW === "table"){ renderTable(); return; }
   if(VIEW === "setup"){ renderSetup(); return; }
-  if(VIEW === "archive"){ renderArchive(); return; }
   renderGame();
 }
+function go(view){
+  VIEW = view; render();
+  try{ window.scrollTo(0, 0); }catch(e){}
+}
 
-function isDbl(g, r, c){ return !!(g.dbl && g.dbl[r] && g.dbl[r][c]); }
+/* Eşli oyunda her oyuncunun skoru ayrı tutulur (pl); eş sütunu ikisinin toplamıdır. */
+function hasSplit(g, r){ return g.mode === "team" && !!(g.pl && g.pl[r]); }
+function isDbl(g, r, c){ return !hasSplit(g, r) && !!(g.dbl && g.dbl[r] && g.dbl[r][c]); }
+function plDbl(g, r, i){ return hasSplit(g, r) && !!(g.dbl && g.dbl[r] && g.dbl[r][i]); }
+function splitText(g, r, k){
+  var a = k, b = k + 2, c = '<span class="x2" title="çift">(ç)</span>';
+  return fmt(g.pl[r][a]) + (plDbl(g, r, a) ? c : '') + ' + ' + fmt(g.pl[r][b]) + (plDbl(g, r, b) ? c : '');
+}
+
+function timeLabel(ts){
+  try{ return new Date(ts).toLocaleTimeString("tr-TR", {hour:"2-digit", minute:"2-digit"}); }
+  catch(e){ return ""; }
+}
+function sameDay(a, b){ var x = new Date(a), y = new Date(b); return x.toDateString() === y.toDateString(); }
+/* Masanın açıldığı gün oynanan oyunda yalnız saat, başka günse tarih gösterilir. */
+function whenLabel(ts, ref){ return ts ? (sameDay(ts, ref) ? timeLabel(ts) : dateLabel(ts)) : ""; }
+function defaultTableName(){
+  try{ return new Date().toLocaleDateString("tr-TR", {day:"numeric", month:"long", weekday:"long"}); }
+  catch(e){ return "Yeni masa"; }
+}
+
+var BACK_SVG = '<svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.5 3.5 5 8.5l5.5 5"/></svg>';
+var MENU_SVG = '<svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" aria-hidden="true"><circle cx="9" cy="3.5" r="1.6"/><circle cx="9" cy="9" r="1.6"/><circle cx="9" cy="14.5" r="1.6"/></svg>';
+var LIVE_SVG = '<svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="1.8" fill="currentColor" stroke="none"/><path d="M6.6 6.6a4.8 4.8 0 0 0 0 6.8M13.4 6.6a4.8 4.8 0 0 1 0 6.8M4 4a8.5 8.5 0 0 0 0 12M16 4a8.5 8.5 0 0 1 0 12"/></svg>';
+function iconBtn(id, label, svg){ return '<button class="icon-btn" id="' + id + '" aria-label="' + label + '">' + svg + '</button>'; }
 
 function topbarGame(){
   topbar.hidden = false;
   topbar.innerHTML =
-      '<div class="brand"><span class="brand-mark tile">101</span><span style="min-width:0">'
-    +   '<span class="brand-text">Yaz Boz</span><br>'
-    +   '<span class="brand-sub">' + modeLabel(G) + ' · '
-    +     (G.hands.length ? G.hands.length + " el oynandı" : "henüz el girilmedi") + '</span>'
-    + '</span></div>'
-    + '<button class="icon-btn" id="menuBtn" aria-label="Seçenekler">'
-    +   '<svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" aria-hidden="true">'
-    +   '<circle cx="9" cy="3.5" r="1.6"/><circle cx="9" cy="9" r="1.6"/><circle cx="9" cy="14.5" r="1.6"/></svg></button>';
+      '<div class="brand">' + iconBtn("backBtn", "Masaya dön", BACK_SVG)
+    +   '<span class="brand-col"><span class="brand-text">' + esc(T.name) + '</span>'
+    +   '<span class="brand-sub">' + (T.games.length + 1) + '. oyun · ' + modeLabel(G) + ' · '
+    +     (G.hands.length ? G.hands.length + " el oynandı" : "henüz el girilmedi") + '</span></span>'
+    + '</div>'
+    + iconBtn("menuBtn", "Seçenekler", MENU_SVG);
+  document.getElementById("backBtn").addEventListener("click", function(){ go("table"); });
   document.getElementById("menuBtn").addEventListener("click", openMenu);
 }
 
-function topbarBack(title, onBack){
+function topbarBack(title, onBack, right){
   topbar.hidden = false;
   topbar.innerHTML =
-      '<div class="brand">'
-    +   '<button class="icon-btn" id="backBtn" aria-label="Geri">'
-    +     '<svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="2" '
-    +     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.5 3.5 5 8.5l5.5 5"/></svg>'
-    +   '</button>'
-    +   '<span class="brand-text">' + esc(title) + '</span>'
-    + '</div><span></span>';
+      '<div class="brand">' + iconBtn("backBtn", "Geri", BACK_SVG)
+    +   '<span class="brand-col"><span class="brand-text">' + esc(title) + '</span></span>'
+    + '</div>' + (right || '<span></span>');
   document.getElementById("backBtn").addEventListener("click", onBack);
+}
+
+/* ---------- ana ekran: masalar ---------- */
+function tableMeta(t){
+  var n = t.games.length;
+  return dateLabel(t.createdAt) + ' · ' + (n ? n + " oyun" : "henüz biten oyun yok");
+}
+function renderHome(){
+  topbar.hidden = true; actionbar.hidden = true;
+  var list = TABLES.slice().sort(function(a, b){ return b.createdAt - a.createdAt; });
+  var h = '<div class="setup"><div class="setup-hero">'
+        + '<div class="hero-mark tile">101</div>'
+        + '<h1>Okey 101 Yaz&nbsp;Boz</h1>'
+        + '<p>Her buluşma için bir masa açın. O masada oynanan bütün oyunlar saklanır; istediğiniz gün geri dönüp bakabilir, yeni oyun ekleyebilirsiniz.</p>'
+        + '</div>'
+        + '<button class="btn-primary tile" id="newTableBtn">Yeni Masa Aç</button>';
+  if(list.length){
+    h += '<section class="card"><div class="card-head"><h2>Masalar</h2><span class="hint">' + list.length + ' masa</span></div><ul class="arch-list">';
+    for(var i=0;i<list.length;i++){
+      var t = list[i], g = lastGameOf(t), live = t.cur && t.cur.started;
+      h += '<li><button class="arch-item" data-table="' + esc(t.id) + '">'
+         +   '<span class="arch-meta">' + esc(tableMeta(t)) + (live ? ' · <b class="live-tag">oyun sürüyor</b>' : '') + '</span>'
+         +   '<span class="arch-win">' + esc(t.name) + '</span>'
+         +   (g ? '<span class="arch-rest">' + esc(g.players.filter(Boolean).join(", ")) + '</span>' : '')
+         + '</button><span class="chev" aria-hidden="true">›</span></li>';
+    }
+    h += '</ul></section>';
+    if(allGames().length) h += '<button class="sbtn" id="toStats">Oyuncu İstatistikleri</button>';
+  }
+  main.innerHTML = h + '</div>';
+  document.getElementById("newTableBtn").addEventListener("click", openNewTableSheet);
+  var ts = document.getElementById("toStats");
+  if(ts) ts.addEventListener("click", function(){ go("stats"); });
+}
+
+/* ---------- masa ekranı ---------- */
+function renderTable(){
+  actionbar.hidden = true;
+  topbarBack(T.name, function(){ go("home"); }, iconBtn("liveBtn", "Canlı skor linki", LIVE_SVG));
+  document.getElementById("liveBtn").addEventListener("click", openLiveSheet);
+
+  var live = G && G.started;
+  var h = '<div class="live-meta"><span>' + esc(dateLabel(T.createdAt)) + ' tarihinde açıldı</span>'
+        + '<span>' + (T.games.length ? T.games.length + " oyun oynandı" : "") + '</span></div>';
+  if(live){
+    h += '<section class="card"><div class="card-head"><h2>Süren Oyun</h2>'
+       +   '<span class="hint">' + (T.games.length + 1) + '. oyun · ' + modeLabel(G) + ' · ' + G.hands.length + ' el</span></div>'
+       +   '<div class="cur-body">' + standingsHTML(G) + '<button class="btn-primary tile" id="resumeBtn">Oyuna Dön</button></div></section>';
+  } else {
+    h += '<button class="btn-primary tile" id="newGameBtn">Yeni Oyun Başlat</button>';
+  }
+  h += '<section class="card"><div class="card-head"><h2>Oynanan Oyunlar</h2>'
+     +   '<span class="hint">' + (T.games.length ? "detay için dokun" : "") + '</span></div>'
+     + (T.games.length ? gameListHTML(T.games, "t", true, T.createdAt)
+                       : '<div class="empty">Bu masada henüz biten oyun yok.<br>Bitirdiğiniz her oyun buraya kaydedilir.</div>')
+     + '</section>';
+  if(T.games.length) h += statsCardHTML(T.games, "Masa İstatistikleri");
+  h += '<button class="sbtn" id="renameBtn">Masa Adını Değiştir</button>';
+  main.innerHTML = h;
+
+  var rb = document.getElementById("resumeBtn");
+  if(rb) rb.addEventListener("click", function(){ go("game"); });
+  var nb = document.getElementById("newGameBtn");
+  if(nb) nb.addEventListener("click", function(){
+    if(!G){
+      var last = lastGameOf(T) || latestGame();
+      G = blankGame(last ? last.mode : "solo", last ? last.players.slice() : null, 0);
+    }
+    saveGame(); go("setup");
+  });
+  document.getElementById("renameBtn").addEventListener("click", openRenameSheet);
+}
+
+function gameListHTML(games, src, deletable, ref){
+  var h = '<ul class="arch-list">';
+  for(var a = games.length - 1; a >= 0; a--){
+    var g = games[a], win = leaders(g), n = nEnt(g), rest = [];
+    for(var k=0;k<n;k++) if(win.indexOf(k) < 0) rest.push(entName(g,k) + " " + fmt(tot(g,k)));
+    h += '<li>'
+       +   '<button class="arch-item" data-game="' + a + '" data-src="' + src + '">'
+       +     '<span class="arch-meta">' + (a + 1) + '. oyun · ' + esc(whenLabel(g.endedAt, ref)) + ' · ' + modeLabel(g) + ' · ' + g.hands.length + ' el</span>'
+       +     '<span class="arch-win">🏆 ' + esc(entName(g, win[0])) + '<span class="sc">' + fmt(tot(g, win[0])) + '</span></span>'
+       +     '<span class="arch-rest">' + esc(rest.join("  ·  ")) + '</span>'
+       +   '</button>'
+       +   (deletable ? '<button class="arch-del" data-delgame="' + a + '" aria-label="Oyunu masadan sil">&times;</button>' : '')
+       + '</li>';
+  }
+  return h + '</ul>';
 }
 
 /* ---------- oyun ekranı ---------- */
@@ -750,45 +943,62 @@ function renderGame(){
 }
 
 /* ---------- canlı izleme ekranı ---------- */
-function timeLabel(ts){
-  try{ return new Date(ts).toLocaleTimeString("tr-TR", {hour:"2-digit", minute:"2-digit"}); }
-  catch(e){ return ""; }
-}
-function normLive(g){
-  g.hands = g.hands || []; g.extras = g.extras || []; g.dealers = g.dealers || []; g.dbl = g.dbl || [];
-  g.players = g.players || ["","","",""];
-  return g;
+function hasLocalCopy(id){
+  return TABLES.some(function(t){ return t.id === id || t.importedFrom === id; });
 }
 function renderWatch(){
   actionbar.hidden = true;
-  var g = LIVE ? normLive(LIVE.g) : null;
+  var t = LIVE ? LIVE.t : null, g = t ? t.cur : null, live = !!(g && g.started);
   topbar.hidden = false;
   topbar.innerHTML =
-      '<div class="brand"><span class="brand-mark tile">101</span><span style="min-width:0">'
-    +   '<span class="brand-text">Canlı Skor</span><br>'
-    +   '<span class="brand-sub">' + (g ? modeLabel(g) + ' · ' + (g.hands.length ? g.hands.length + " el oynandı" : "henüz el girilmedi") : "Okey 101 Yaz Boz") + '</span>'
+      '<div class="brand"><span class="brand-mark tile">101</span><span class="brand-col">'
+    +   '<span class="brand-text">' + esc(t && t.name ? t.name : "Canlı Skor") + '</span>'
+    +   '<span class="brand-sub">' + (live ? (t.games.length + 1) + '. oyun · ' + modeLabel(g) + ' · ' + (g.hands.length ? g.hands.length + " el oynandı" : "henüz el girilmedi") : "Okey 101 Yaz Boz · canlı skor") + '</span>'
     + '</span></div>'
     + '<span class="live-chip' + (liveState === "on" ? "" : " off") + '">' + (liveState === "on" ? "Canlı" : "Bağlantı yok") + '</span>';
 
-  if(!g){
+  if(!t){
     main.innerHTML = '<section class="card"><div class="empty">' + (liveLoaded
       ? 'Henüz canlı oyun yok.<br>Skor tutan kişi ilk eli girdiğinde burada anında görünür.'
       : (liveState === "error" ? 'Canlı skora bağlanılamadı.<br>Linki kontrol edip sayfayı yenileyin.' : 'Canlı skora bağlanılıyor…')) + '</div></section>';
     return;
   }
-  var h = '<div class="live-meta"><span>' + esc(g.started ? "Oyun sürüyor" : "Yeni oyun hazırlanıyor") + '</span>'
-        + '<span>' + (LIVE.at ? "son güncelleme " + esc(timeLabel(LIVE.at)) : "") + '</span></div>'
-        + standingsHTML(g) + tableCardHTML(g, false) + ledgerHTML(g, false);
-  if(g.roll && g.roll.d){
-    h += '<section class="card"><div class="card-head"><h2>Son Zar</h2><span class="hint">' + esc(timeLabel(g.roll.at)) + '</span></div>'
-       + '<div class="live-dice">' + dieHTML(g.roll.d[0], true) + dieHTML(g.roll.d[1], true) + '</div></section>';
+  var h = '<div class="live-meta"><span>' + esc(live ? "Oyun sürüyor" : (g ? "Yeni oyun hazırlanıyor" : "Şu an süren oyun yok")) + '</span>'
+        + '<span>' + (LIVE.at ? "son güncelleme " + esc(timeLabel(LIVE.at)) : "") + '</span></div>';
+  if(live){
+    h += standingsHTML(g) + tableCardHTML(g, false) + ledgerHTML(g, false);
+    if(g.roll && g.roll.d){
+      h += '<section class="card"><div class="card-head"><h2>Son Zar</h2><span class="hint">' + esc(timeLabel(g.roll.at)) + '</span></div>'
+         + '<div class="live-dice">' + dieHTML(g.roll.d[0], true) + dieHTML(g.roll.d[1], true) + '</div></section>';
+    }
+  } else {
+    h += '<section class="card"><div class="empty">' + (t.games.length
+          ? 'Sıradaki oyun başladığında burada canlı görünür.'
+          : 'Skor tutan kişi ilk eli girdiğinde burada anında görünür.') + '</div></section>';
+  }
+  if(t.games.length){
+    h += '<section class="card"><div class="card-head"><h2>Bu Masada Oynananlar</h2><span class="hint">' + t.games.length + ' oyun</span></div>'
+       + gameListHTML(t.games, "w", false, t.createdAt) + '</section>';
+  }
+  if(LIVE_KIND === "firebase" && t.id && !hasLocalCopy(t.id)){
+    h += '<button class="sbtn" id="importBtn">Bu Masayı Cihazıma Kaydet</button>'
+       + '<p class="setup-note">Skoru bundan sonra bu cihazdan tutmak isterseniz masanın bir kopyasını buraya kaydedin.</p>';
   }
   main.innerHTML = h;
+  var ib = document.getElementById("importBtn");
+  if(ib) ib.addEventListener("click", importLive);
   if(freshRow >= 0){
     var tr = main.querySelector('tr[data-row="' + freshRow + '"]');
     if(tr) tr.classList.add("fresh");
     freshRow = -1;
   }
+}
+function importLive(){
+  var src = JSON.parse(JSON.stringify(LIVE.t));
+  var copy = normTable({ id: randomId(), name: src.name, createdAt: src.createdAt,
+                         games: src.games, cur: src.cur, importedFrom: src.id });
+  TABLES.push(copy); saveTables(); put(K_ACTIVE, copy.id);
+  location.href = location.pathname;          /* izleme linkinden çıkıp uygulamayı bu masayla aç */
 }
 
 function standingsHTML(g){
@@ -829,7 +1039,9 @@ function tableCardHTML(g, editable){
     for(var c=0;c<n;c++){
       var v = g.hands[r][c];
       h += '<td class="' + (v < 0 ? "neg" : "") + '">' + fmt(v)
-         + (isDbl(g, r, c) ? '<span class="x2" title="çift">(ç)</span>' : '') + '</td>';
+         + (isDbl(g, r, c) ? '<span class="x2" title="çift">(ç)</span>' : '')
+         + (hasSplit(g, r) ? '<span class="split">' + splitText(g, r, c) + '</span>' : '')
+         + '</td>';
     }
     h += '</tr>';
   }
@@ -882,13 +1094,11 @@ function dealerChipsHTML(sel){
 }
 
 function renderSetup(){
-  topbar.hidden = true; actionbar.hidden = true;
+  actionbar.hidden = true;
+  topbarBack(T.name, function(){ readSetupNames(); saveGame(); go("table"); });
   var team = G.mode === "team";
-  var h = '<div class="setup"><div class="setup-hero">'
-        + '<div class="hero-mark tile">101</div>'
-        + '<h1>Okey 101 Yaz&nbsp;Boz</h1>'
-        + '<p>Oyun türünü seçin, isimleri yazın, ilk dağıtanı işaretleyin.</p>'
-        + '</div>'
+  var h = '<div class="setup">'
+        + '<div class="sec-label">' + (T.games.length + 1) + '. oyun <em>· oyun türünü seçin, isimleri yazın</em></div>'
         + '<div class="modes">'
         +   '<button class="mode-btn' + (team ? " on" : "") + '" data-mode="team">Eşli<em>iki eş, ikişer kişi</em></button>'
         +   '<button class="mode-btn' + (team ? "" : " on") + '" data-mode="solo">4\'lü<em>herkes kendi başına</em></button>'
@@ -905,11 +1115,10 @@ function renderSetup(){
      + '<div class="dealer-block"><span class="dealer-label">İlk dağıtan <em>· sonraki eller sırayla döner</em></span>'
      +   dealerChipsHTML(G.firstDealer) + '</div>'
      + '<p class="setup-note">' + (team
-          ? "Karşılıklı oturanlar eş olur: 1 ile 3, 2 ile 4. Her el için eş başına tek skor girilir."
+          ? "Karşılıklı oturanlar eş olur: 1 ile 3, 2 ile 4. Her elde dört oyuncunun skoru ayrı girilir, eşlerin toplamı yazılır."
           : "Her el için dört oyuncunun da skoru ayrı girilir.") + '</p>'
      + '<button class="btn-primary tile" id="startBtn">Oyunu Başlat</button>'
      + '<button class="sbtn" id="setupDice">Zar At · ilk dağıtanı belirleyin</button>'
-     + (ARCH.length ? '<button class="sbtn" id="toArchive">Geçmiş Oyunlar · ' + ARCH.length + '</button>' : "")
      + '</div>';
   main.innerHTML = h;
 
@@ -935,28 +1144,25 @@ function renderSetup(){
       var v = (G.players[i] || "").trim();
       G.players[i] = v || ((i+1) + ". oyuncu");
     }
-    G.started = true; VIEW = "game"; saveGame(); render();
+    G.started = true; saveGame(); go("game");
   });
 
   document.getElementById("setupDice").addEventListener("click", openDiceSheet);
-
-  var toArch = document.getElementById("toArchive");
-  if(toArch) toArch.addEventListener("click", function(){ VIEW = "archive"; render(); });
 }
 
-/* ---------- arşiv ekranı ---------- */
+/* ---------- istatistikler ---------- */
 function normKey(s){ return String(s).trim().toLocaleLowerCase("tr").replace(/\s+/g, " "); }
 
-function computeStats(){
+function computeStats(list){
   var m = {}, order = [];
   function rec(nm){
     var k = normKey(nm);
-    if(!m[k]){ m[k] = { name:nm, games:0, wins:0, hands:0, pts:0, rekor:0, best:null, deals:0 }; order.push(k); }
+    if(!m[k]){ m[k] = { name:nm, games:0, wins:0, hands:0, pts:0, rekor:0, best:null }; order.push(k); }
     m[k].name = nm;
     return m[k];
   }
-  for(var a=0;a<ARCH.length;a++){
-    var g = ARCH[a], win = leaders(g), n = nEnt(g);
+  for(var a=0;a<list.length;a++){
+    var g = list[a], win = leaders(g), n = nEnt(g);
     for(var k=0;k<n;k++){
       var mem2 = entMembers(g,k), isWin = win.indexOf(k) >= 0;
       var rekorCount = 0;
@@ -966,7 +1172,7 @@ function computeStats(){
         st.games++; if(isWin) st.wins++;
         st.rekor += rekorCount;
         for(var h=0;h<g.hands.length;h++){
-          var v = g.hands[h][k];
+          var v = hasSplit(g, h) ? g.pl[h][mem2[j]] : g.hands[h][k];   /* eşlide oyuncunun kendi skoru */
           st.hands++; st.pts += v;
           if(st.best === null || v < st.best) st.best = v;
         }
@@ -978,58 +1184,32 @@ function computeStats(){
   return arr;
 }
 
-function renderArchive(){
+function statsCardHTML(list, title){
+  var stats = computeStats(list);
+  var h = '<section class="card"><div class="card-head"><h2>' + esc(title) + '</h2>'
+        + '<span class="hint">' + (list.length ? list.length + " oyun" : "") + '</span></div>';
+  if(!stats.length) return h + '<div class="empty">Henüz biten oyun yok.</div></section>';
+  h += '<div class="stats-wrap"><table class="stats"><thead><tr>'
+     + '<th>Oyuncu</th><th>Oyun</th><th>Galip</th><th>Ort. el</th><th>Rekor</th><th>En iyi</th>'
+     + '</tr></thead><tbody>';
+  for(var i=0;i<stats.length;i++){
+    var s = stats[i];
+    var avg = s.hands ? Math.round(s.pts / s.hands) : null;
+    h += '<tr><td>' + esc(s.name) + '</td>'
+       +   '<td>' + s.games + '</td>'
+       +   '<td class="win">' + s.wins + '</td>'
+       +   '<td>' + (avg === null ? "·" : fmt(avg)) + '</td>'
+       +   '<td>' + (s.rekor || "·") + '</td>'
+       +   '<td>' + (s.best === null ? "·" : fmt(s.best)) + '</td></tr>';
+  }
+  return h + '</tbody></table></div></section>';
+}
+
+function renderStats(){
   actionbar.hidden = true;
-  topbarBack("Geçmiş Oyunlar", function(){ VIEW = G.started ? "game" : "setup"; render(); });
-
-  var stats = computeStats();
-  var h = "";
-
-  h += '<section class="card"><div class="card-head"><h2>Oyuncu İstatistikleri</h2>'
-     + '<span class="hint">' + (ARCH.length ? ARCH.length + " oyun" : "") + '</span></div>';
-  if(!stats.length){
-    h += '<div class="empty">Henüz arşivlenmiş oyun yok.<br>Bir oyunu bitirdiğinizde buraya işlenir.</div>';
-  } else {
-    h += '<div class="stats-wrap"><table class="stats"><thead><tr>'
-       + '<th>Oyuncu</th><th>Oyun</th><th>Galip</th><th>Ort. el</th><th>Rekor</th><th>En iyi</th>'
-       + '</tr></thead><tbody>';
-    for(var i=0;i<stats.length;i++){
-      var s = stats[i];
-      var avg = s.hands ? Math.round(s.pts / s.hands) : null;
-      h += '<tr><td>' + esc(s.name) + '</td>'
-         +   '<td>' + s.games + '</td>'
-         +   '<td class="win">' + s.wins + '</td>'
-         +   '<td>' + (avg === null ? "·" : fmt(avg)) + '</td>'
-         +   '<td>' + (s.rekor || "·") + '</td>'
-         +   '<td>' + (s.best === null ? "·" : fmt(s.best)) + '</td></tr>';
-    }
-    h += '</tbody></table></div>';
-  }
-  h += '</section>';
-
-  h += '<section class="card"><div class="card-head"><h2>Oyunlar</h2>'
-     + '<span class="hint">' + (ARCH.length ? "detay için dokun" : "") + '</span></div>';
-  if(!ARCH.length){
-    h += '<div class="empty">Arşiv boş.</div>';
-  } else {
-    h += '<ul class="arch-list">';
-    for(var a = ARCH.length - 1; a >= 0; a--){
-      var g = ARCH[a], win = leaders(g), n = nEnt(g);
-      var rest = [];
-      for(var k=0;k<n;k++) if(win.indexOf(k) < 0) rest.push(entName(g,k) + " " + fmt(tot(g,k)));
-      h += '<li>'
-         +   '<button class="arch-item" data-game="' + a + '">'
-         +     '<span class="arch-meta">' + esc(dateLabel(g.endedAt)) + ' · ' + modeLabel(g) + ' · ' + g.hands.length + ' el</span>'
-         +     '<span class="arch-win">🏆 ' + esc(entName(g, win[0])) + '<span class="sc">' + fmt(tot(g, win[0])) + '</span></span>'
-         +     '<span class="arch-rest">' + esc(rest.join("  ·  ")) + '</span>'
-         +   '</button>'
-         +   '<button class="arch-del" data-delgame="' + a + '" aria-label="Oyunu arşivden sil">&times;</button>'
-         + '</li>';
-    }
-    h += '</ul>';
-  }
-  h += '</section>';
-  main.innerHTML = h;
+  topbarBack("Oyuncu İstatistikleri", function(){ go("home"); });
+  main.innerHTML = statsCardHTML(allGames(), "Tüm Masalar")
+    + '<p class="setup-note">Aynı isimle girilen oyuncular tek kişi sayılır. Masa bazında istatistikler masanın kendi sayfasında.</p>';
 }
 
 /* ===================== paneller ===================== */
@@ -1062,26 +1242,43 @@ function sanitize(el){
 /* ---------- el girişi ---------- */
 var QUICK = [-101, -202, 101, 202];
 
+/* Her elde dört oyuncunun skoru ayrı girilir. 4'lüde her oyuncu kendi sütunudur;
+   eşlide oyuncular eşleriyle alt alta durur, eş sütununa ikisinin toplamı yazılır. */
 function openHandSheet(editIdx){
   var isEdit = editIdx != null;
-  var n = nEnt(G);
-  var vals = isEdit ? G.hands[editIdx].slice() : [];
+  var team = G.mode === "team";
+  var order = team ? [0, 2, 1, 3] : [0, 1, 2, 3];
   var no = isEdit ? editIdx + 1 : G.hands.length + 1;
   var dealer = isEdit ? G.dealers[editIdx] : nextDealer(G);
   if(dealer == null) dealer = nextDealer(G);
 
+  /* düzeltmede her oyuncunun girdiği taban puan (çiftse yarısı) gösterilir */
+  var base = [null, null, null, null], dflag = [false, false, false, false];
+  if(isEdit){
+    for(var p=0;p<4;p++){
+      var raw, d;
+      if(!team){ raw = G.hands[editIdx][p]; d = isDbl(G, editIdx, p); }
+      else if(hasSplit(G, editIdx)){ raw = G.pl[editIdx][p]; d = plDbl(G, editIdx, p); }
+      else { raw = p < 2 ? G.hands[editIdx][p] : 0; d = p < 2 && isDbl(G, editIdx, p); }   /* eski el: eş toplamı ilk oyuncuda */
+      dflag[p] = !!d; base[p] = d ? raw / 2 : raw;
+    }
+  }
+
   var body = '<div class="dealer-block"><span class="dealer-label">Bu eli kim dağıttı?</span>'
            + dealerChipsHTML(dealer) + '</div>';
-  for(var i=0;i<n;i++){
-    var dbl = isEdit && isDbl(G, editIdx, i);
-    var v = isEdit ? (dbl ? vals[i] / 2 : vals[i]) : null;       /* çift ellerde girilen taban puan gösterilir */
-    body += '<div class="entry" data-dbl="' + (dbl ? 1 : 0) + '" style="--suit:var(--suit-' + i + ')">'
+  for(var i=0;i<4;i++){
+    var pi = order[i], suit = team ? teamOf(pi) : pi, v = base[pi], dbl = dflag[pi];
+    if(team && i % 2 === 0){
+      body += '<div class="team-head" style="--suit:var(--suit-' + suit + ')">'
+            +   '<span>' + esc(entName(G, suit)) + '</span><span>eş toplamı <b data-tsum="' + suit + '">–</b></span></div>';
+    }
+    body += '<div class="entry" data-p="' + pi + '" data-dbl="' + (dbl ? 1 : 0) + '" style="--suit:var(--suit-' + suit + ')">'
           +   '<div class="entry-top">'
           +     '<span class="dot"></span>'
-          +     '<span class="entry-name">' + esc(entName(G,i)) + '</span>'
+          +     '<span class="entry-name">' + esc(pName(G, pi)) + '</span>'
           +     '<div class="field">'
           +       '<button class="mini" data-act="sign" aria-label="Artı eksi">&plusmn;</button>'
-          +       '<input class="ein" type="text" inputmode="numeric" pattern="-?[0-9]*" placeholder="0" value="' + (v === null || v === undefined ? "" : v) + '" aria-label="' + esc(entName(G,i)) + ' skoru">'
+          +       '<input class="ein" type="text" inputmode="numeric" pattern="-?[0-9]*" placeholder="0" value="' + (v === null || v === undefined ? "" : v) + '" aria-label="' + esc(pName(G, pi)) + ' skoru">'
           +       '<button class="mini" data-act="clear" aria-label="Temizle">&times;</button>'
           +     '</div>'
           +   '</div>'
@@ -1096,11 +1293,11 @@ function openHandSheet(editIdx){
   }
 
   var inner = '<div class="sheet-head"><h3>' + no + '. El' + (isEdit ? " · düzelt" : "") + '</h3>'
-            +   '<span class="sub">' + n + ' skorun tamamı gerekli</span></div>'
+            +   '<span class="sub">4 skorun tamamı gerekli</span></div>'
             + '<div class="sheet-body">' + body
             +   '<div class="sheet-note"><span>El toplamı</span><b id="hsum">–</b></div></div>'
             + '<div class="sheet-foot">'
-            +   '<p class="err" id="err" hidden>Kaydetmek için ' + (G.mode === "team" ? "iki eşin de" : "dört oyuncunun da") + ' skorunu girin.</p>'
+            +   '<p class="err" id="err" hidden>Kaydetmek için dört oyuncunun da skorunu girin.</p>'
             +   '<button class="btn-primary tile" id="saveHand">' + (isEdit ? "Değişikliği Kaydet" : "Eli Kaydet") + '</button>'
             +   (isEdit ? '<button class="sbtn danger" id="delHand">Bu Eli Sil</button>' : "")
             + '</div>';
@@ -1112,6 +1309,7 @@ function openHandSheet(editIdx){
     var pickedDealer = dealer;
 
     function entryOf(i){ return ins[i].parentNode.parentNode.parentNode; }
+    function playerOf(i){ return Number(entryOf(i).getAttribute("data-p")); }
     function dblOf(i){ return entryOf(i).getAttribute("data-dbl") === "1"; }
     function effVal(i){                               /* çift seçiliyse yazılan puanın 2 katı */
       var p = parseVal(ins[i].value);
@@ -1119,10 +1317,10 @@ function openHandSheet(editIdx){
     }
 
     function refresh(){
-      var t = 0, ok = true;
+      var t = 0, ok = true, ts = [0, 0], tok = [true, true];
       for(var i=0;i<ins.length;i++){
-        var p = parseVal(ins[i].value), ev = effVal(i);
-        if(ev === null) ok = false; else t += ev;
+        var p = parseVal(ins[i].value), ev = effVal(i), k = teamOf(playerOf(i));
+        if(ev === null){ ok = false; tok[k] = false; } else { t += ev; ts[k] += ev; }
         var entry = entryOf(i), on = dblOf(i);
         var chips = entry.querySelectorAll(".chip[data-q]");
         for(var c=0;c<chips.length;c++)
@@ -1132,6 +1330,11 @@ function openHandSheet(editIdx){
         var note = entry.querySelector(".dbl-note");
         note.hidden = !on;
         note.querySelector("b").textContent = ev === null ? "–" : fmt(ev);
+      }
+      var tb = sheet.querySelectorAll("[data-tsum]");
+      for(var j=0;j<tb.length;j++){
+        var kk = Number(tb[j].getAttribute("data-tsum"));
+        tb[j].textContent = tok[kk] ? fmt(ts[kk]) : "–";
       }
       hsum.textContent = ok ? fmt(t) : "–";
     }
@@ -1175,28 +1378,32 @@ function openHandSheet(editIdx){
     });
 
     sheet.querySelector("#saveHand").addEventListener("click", function(){
-      var out = [], flags = [], anyDbl = false, bad = false;
+      var byP = [0, 0, 0, 0], flags = [false, false, false, false], anyDbl = false, bad = false;
       for(var i=0;i<ins.length;i++){
-        var p = effVal(i);
-        if(p === null){ entryOf(i).classList.add("invalid"); bad = true; }
-        out.push(p);
-        flags.push(dblOf(i)); if(dblOf(i)) anyDbl = true;
+        var ev = effVal(i), pi = playerOf(i);
+        if(ev === null){ entryOf(i).classList.add("invalid"); bad = true; }
+        byP[pi] = ev;
+        flags[pi] = dblOf(i); if(flags[pi]) anyDbl = true;
       }
-      var dflags = anyDbl ? flags : null;
       if(bad){
         err.hidden = false;
         var first = sheet.querySelector(".entry.invalid .ein");
         if(first) first.focus();
         return;
       }
+      var row = team ? [byP[0] + byP[2], byP[1] + byP[3]] : byP;
+      var plRow = team ? byP : null;
+      var dflags = anyDbl ? flags : null;
       if(isEdit){
-        G.hands[editIdx] = out;
+        G.hands[editIdx] = row;
+        G.pl[editIdx] = plRow;
         G.dbl[editIdx] = dflags;
         G.dealers[editIdx] = pickedDealer;
         recascade(G, editIdx);                       /* sonraki ellerin dağıtanı kayar */
         if(editIdx === 0) G.firstDealer = pickedDealer;
       } else {
-        G.hands.push(out);
+        G.hands.push(row);
+        G.pl.push(plRow);
         G.dbl.push(dflags);
         G.dealers.push(pickedDealer);
         if(G.hands.length === 1) G.firstDealer = pickedDealer;
@@ -1210,6 +1417,7 @@ function openHandSheet(editIdx){
       G.hands.splice(editIdx, 1);
       G.dealers.splice(editIdx, 1);
       G.dbl.splice(editIdx, 1);
+      G.pl.splice(editIdx, 1);
       for(var i=0;i<G.extras.length;i++)               /* rekor/ceza el konumları kaysın */
         if(G.extras[i].h != null && G.extras[i].h > editIdx) G.extras[i].h--;
       saveGame(); closeSheet(); render();
@@ -1311,7 +1519,11 @@ function shareText(g){
     L.push(""); L.push("El skorları (" + names.join(" / ") + ")");
     for(var h=0;h<g.hands.length;h++){
       var dl = d[h] == null ? "" : "  [" + pName(g, d[h]) + " dağıttı]";
-      L.push((h+1) + ". el — " + g.hands[h].map(function(v, c){ return plain(v) + (isDbl(g, h, c) ? " (çift)" : ""); }).join(" / ") + dl);
+      L.push((h+1) + ". el — " + g.hands[h].map(function(v, c){
+        var s = plain(v) + (isDbl(g, h, c) ? " (çift)" : "");
+        if(hasSplit(g, h)) s += " (" + plain(g.pl[h][c]) + (plDbl(g, h, c) ? "ç" : "") + " + " + plain(g.pl[h][c+2]) + (plDbl(g, h, c+2) ? "ç" : "") + ")";
+        return s;
+      }).join(" / ") + dl);
     }
     L.push("El toplamı — " + names.map(function(_, j){ return plain(hSum(g,j)); }).join(" / "));
   }
@@ -1366,18 +1578,18 @@ function openTextSheet(txt){
 }
 
 /* ---------- menü ---------- */
-var RESET_LABEL = "Yeni Oyun · Her Şeyi Sıfırla";
+var RESET_LABEL = "Bu Oyunu Sıfırla";
 
 function openMenu(){
   var canEnd = G.hands.length > 0 || G.extras.length > 0;
-  var inner = '<div class="sheet-head"><h3>Seçenekler</h3><span class="sub">' + modeLabel(G) + '</span></div>'
+  var inner = '<div class="sheet-head"><h3>Seçenekler</h3><span class="sub">' + esc(T.name) + '</span></div>'
             + '<div class="sheet-body"><div class="menu-list">'
             +   '<button class="sbtn" data-m="live">Canlı Skor Linki</button>'
             +   '<button class="sbtn" data-m="share">Sonucu Paylaş</button>'
             +   '<button class="sbtn" data-m="names">Oyuncu İsimlerini Düzenle</button>'
             +   '<button class="sbtn" data-m="undoLast"' + (G.hands.length ? "" : " disabled") + '>Son Eli Sil</button>'
-            +   '<button class="sbtn" data-m="finish"' + (canEnd ? "" : " disabled") + '>Oyunu Bitir ve Arşivle</button>'
-            +   '<button class="sbtn" data-m="archive">Geçmiş Oyunlar' + (ARCH.length ? " · " + ARCH.length : "") + '</button>'
+            +   '<button class="sbtn" data-m="finish"' + (canEnd ? "" : " disabled") + '>Oyunu Bitir ve Masaya Kaydet</button>'
+            +   '<button class="sbtn" data-m="table">Masaya Dön</button>'
             +   '<button class="sbtn danger" data-m="reset">' + RESET_LABEL + '</button>'
             + '</div></div>'
             + '<div class="sheet-foot"><button class="sbtn" id="closeMenu">Kapat</button></div>';
@@ -1392,11 +1604,11 @@ function openMenu(){
       if(m === "live"){ closeSheet(); openLiveSheet(); return; }
       if(m === "share"){ closeSheet(); shareGame(G); return; }
       if(m === "names"){ closeSheet(); openNamesSheet(); return; }
-      if(m === "archive"){ closeSheet(); VIEW = "archive"; render(); return; }
+      if(m === "table"){ closeSheet(); go("table"); return; }
 
       if(m === "undoLast"){
         var snap = snapshot(), no = G.hands.length;
-        G.hands.pop(); G.dealers.pop(); G.dbl.pop();
+        G.hands.pop(); G.dealers.pop(); G.dbl.pop(); G.pl.pop();
         for(var i=0;i<G.extras.length;i++)
           if(G.extras[i].h != null && G.extras[i].h > no - 1) G.extras[i].h = no - 1;
         saveGame(); closeSheet(); render();
@@ -1407,14 +1619,14 @@ function openMenu(){
       if(m === "finish"){
         var snap2 = snapshot();
         var done = JSON.parse(JSON.stringify({
-          mode:G.mode, players:G.players, hands:G.hands, dealers:G.dealers, dbl:G.dbl, extras:G.extras
+          mode:G.mode, players:G.players, hands:G.hands, dealers:G.dealers, dbl:G.dbl, pl:G.pl, extras:G.extras
         }));
         done.endedAt = Date.now();
-        ARCH.push(done); saveArch();
+        T.games.push(done);
         var win = leaders(done);
         G = blankGame(G.mode, G.players.slice(), nextDealer(G));   /* rövanşta sıra devam eder */
-        VIEW = "setup"; saveGame(); closeSheet(); render();
-        toast("Arşivlendi · " + entName(done, win[0]) + " kazandı", snap2);
+        saveGame(); closeSheet(); go("table");
+        toast("Masaya kaydedildi · " + entName(done, win[0]) + " kazandı", snap2);
         return;
       }
 
@@ -1422,7 +1634,7 @@ function openMenu(){
         if(b.getAttribute("data-armed")){
           var snap3 = snapshot();
           G = blankGame(G.mode, G.players.slice(), G.firstDealer);
-          VIEW = "setup"; saveGame(); closeSheet(); render();
+          saveGame(); closeSheet(); go("setup");
           toast("Oyun sıfırlandı", snap3);
         } else {
           b.setAttribute("data-armed", "1");
@@ -1433,6 +1645,38 @@ function openMenu(){
         }
       }
     });
+  });
+}
+
+/* ---------- masa açma / adlandırma ---------- */
+function tableNameSheet(title, value, action, onSave){
+  var inner = '<div class="sheet-head"><h3>' + title + '</h3><span class="sub">masalar silinmez</span></div>'
+            + '<div class="sheet-body">'
+            +   '<p class="desc">Masaya bir isim verin; o gün oynanan bütün oyunlar bu isimle saklanır.</p>'
+            +   '<label class="name-row" style="--suit:var(--focus)">'
+            +     '<input type="text" id="tname" value="' + esc(value) + '" placeholder="' + esc(defaultTableName()) + '" autocomplete="off" autocapitalize="sentences" spellcheck="false" enterkeyhint="done" maxlength="60">'
+            +   '</label>'
+            + '</div>'
+            + '<div class="sheet-foot"><button class="btn-primary tile" id="saveTname">' + action + '</button></div>';
+  openSheet(inner, function(sheet){
+    var inp = sheet.querySelector("#tname");
+    function save(){ onSave(inp.value.trim() || defaultTableName()); }
+    sheet.querySelector("#saveTname").addEventListener("click", save);
+    inp.addEventListener("keydown", function(e){ if(e.key === "Enter"){ e.preventDefault(); save(); } });
+    setTimeout(function(){ try{ inp.focus(); inp.select(); }catch(e){} }, 60);
+  });
+}
+function openNewTableSheet(){
+  tableNameSheet("Yeni Masa", defaultTableName(), "Masayı Aç", function(name){
+    var last = latestGame(), t = newTable(name);
+    openTable(t);
+    G = blankGame(last ? last.mode : "solo", last ? last.players.slice() : null, 0);
+    saveGame(); closeSheet(); go("setup");
+  });
+}
+function openRenameSheet(){
+  tableNameSheet("Masa Adı", T.name, "Kaydet", function(name){
+    T.name = name; saveGame(); closeSheet(); render();
   });
 }
 
@@ -1474,7 +1718,7 @@ function openLiveSheet(){
             +     (ready ? (liveState === "error" ? "Hata" : "Yayında") : "Kapalı") + '</span></div>'
             + '<div class="sheet-body">'
             +   '<p class="desc">' + (ready
-                  ? "Bu linke giren izleyiciler skor tablosunu canlı görür. El, rekor veya ceza girdiğiniz anda onların ekranı da güncellenir."
+                  ? "<b>" + esc(T ? T.name : "") + "</b> masasının linki. Açan kişi süren oyunu ve bu masada biten bütün oyunları görür; el, rekor veya ceza girdiğiniz anda ekranı güncellenir."
                   : (LIVE_KIND ? "Canlı yayına bağlanılamadı. İnternet bağlantınızı kontrol edip sayfayı yenileyin."
                                : "Canlı yayın ayarlanmamış (Firebase bilgileri eksik). Skorlar yalnızca bu cihazda tutuluyor.")) + '</p>'
             +   (ready ? '<span class="link-box" id="liveLink">' + esc(LIVE_URL) + '</span>'
@@ -1548,11 +1792,11 @@ function openDiceSheet(){
   });
 }
 
-/* ---------- arşiv detayı ---------- */
-function openGameSheet(idx){
-  var g = ARCH[idx], win = leaders(g);
+/* ---------- oyun detayı ---------- */
+function openGameSheet(g){
+  var win = leaders(g);
   var inner = '<div class="sheet-head"><h3>' + esc(dateLabel(g.endedAt)) + '</h3>'
-            +   '<span class="sub">' + modeLabel(g) + ' · ' + g.hands.length + ' el</span></div>'
+            +   '<span class="sub">' + esc(timeLabel(g.endedAt)) + ' · ' + modeLabel(g) + ' · ' + g.hands.length + ' el</span></div>'
             + '<div class="sheet-body">'
             +   '<p class="desc">🏆 <b>' + esc(entName(g, win[0])) + '</b> kazandı · ' + fmt(tot(g, win[0])) + '</p>'
             +   standingsHTML(g) + tableCardHTML(g, false)
@@ -1580,6 +1824,7 @@ function toast(msg, snap){
   toastTimer = setTimeout(function(){ toastRoot.innerHTML = ""; }, 5500);
 }
 
+
 /* ===================== bağlantılar ===================== */
 document.getElementById("newHandBtn").addEventListener("click", function(){ openHandSheet(null); });
 document.getElementById("diceBtn").addEventListener("click", openDiceSheet);
@@ -1599,14 +1844,26 @@ main.addEventListener("click", function(e){
   var row = e.target.closest("[data-hand]");
   if(row){ openHandSheet(Number(row.getAttribute("data-hand"))); return; }
 
+  var tb = e.target.closest("[data-table]");
+  if(tb){
+    var t = findTable(tb.getAttribute("data-table"));
+    if(t){ openTable(t); go("table"); }
+    return;
+  }
+
   var gm = e.target.closest("[data-game]");
-  if(gm){ openGameSheet(Number(gm.getAttribute("data-game"))); return; }
+  if(gm){
+    var list = gm.getAttribute("data-src") === "w" ? (LIVE && LIVE.t ? LIVE.t.games : []) : (T ? T.games : []);
+    var g = list[Number(gm.getAttribute("data-game"))];
+    if(g) openGameSheet(g);
+    return;
+  }
 
   var dg = e.target.closest("[data-delgame]");
   if(dg){
     var gi = Number(dg.getAttribute("data-delgame")), snap2 = snapshot();
-    ARCH.splice(gi, 1); saveArch(); render();
-    toast("Oyun arşivden silindi", snap2);
+    T.games.splice(gi, 1); saveGame(); render();
+    toast("Oyun masadan silindi", snap2);
   }
 });
 
